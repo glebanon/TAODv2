@@ -1,0 +1,58 @@
+\ProvidesPackage{mymath}
+\RequirePackage{amsmath,amssymb,amsthm}
+
+% operators and bold
+\newcommand{\defeq}{\mbox{$\;\stackrel{\mbox{\tiny\rm def}}{=}\;$}}
+\def\argmin{\operatornamewithlimits{arg\, min}}
+\def\argmax{\operatornamewithlimits{arg\, max}}
+\def\infsup{\operatornamewithlimits{inf\, sup}}
+\def\bb{\boldsymbol}
+
+% sets
+\def\R{\mathbb{R}}
+\def\N{\mathbb{N}}
+\def\Z{\mathbb{N}}
+\def\range{\textsf{\text{Range}}\,}
+\def\dom{\textsf{\text{Dom}}\,}
+\def\sign{\operatorname{\sf sign}}
+
+% algebra
+\def\trace{\operatorname{\sf tr}}
+\def\diag{\operatorname{\sf diag}}
+\def\rank{\operatorname{\sf rank}}
+\def\row{\operatorname{\sf row}}
+\def\col{\operatorname{\sf col}}
+\def\dim{\operatorname{\sf dim}}
+\def\nulll{\operatorname{\sf null}}
+
+
+% probability
+\def\P{\operatorname{\sf P}}
+\def\E{\operatorname{\sf E}}
+\def\Var{\operatorname{\sf Var}}
+\def\Cov{\operatorname{\sf Cov}}
+\def\std{\operatorname{\sf std}}
+\def\Cor{\operatorname{\sf Cor}}
+\def\bias{\operatorname{\sf bias}}
+\def\mse{\operatorname{\sf mse}}
+\def\err{\operatorname{\sf err}}
+\def\true{\operatorname{\sf{true}}}
+\def\c{\,|\,}
+
+% permutations and ranking
+\def\S{\mathfrak{S}}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}{Lemma}[section]
+\newtheorem{prop}{Proposition}[section]
+\newtheorem{cor}{Corollary}[section]
+\newtheorem{examp}{Example}[section]
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[section]
+
+\newcommand{\toop}{\xrightarrow{\text{\tiny\rm p}}}
+\newcommand{\tooas}{\xrightarrow{\text{\tiny\rm as}}}
+\newcommand{\tood}{\rightsquigarrow}
+\newcommand{\iid}{\mbox{$\;\stackrel{\mbox{\tiny\rm iid}}{\sim}\;$}}
