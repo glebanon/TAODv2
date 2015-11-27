@@ -1,0 +1,60 @@
+\chapter{Data Transformations} \label{chapter:dataTransform}
+
+In many cases data is drawn from a highly skewed distribution that is not well described by one of the common statistical families. In some of these cases a simple power transformation may map the data to a common distribution like the Gaussian or Gamma distribution. A suitable model can then be fitted to the transformed data making a distribution of the original data available by inverting a function of random variable.
+
+Formally, the power transform is defined as follows for non-negative data
+\begin{align}
+x \mapsto \begin{cases}\frac{x^{\lambda}-1}{\lambda} & \lambda\neq 0\\\log x & \lambda=0 \end{cases}
+\end{align}
+where $\lambda$ is a real valued parameter. The reason for the specific definition above is that it is continuous in $\lambda$. That is the mapping $f_{\lambda}(x)$ defined above is continuous in both $x$ and $\lambda$. When the data is allowed to take negative values the simplest extension is to shift all values to the right by adding a number large enough so all values are non-negative and then proceed as above.
+
+The easiest way to think about the power transform is as mapping $x$ to $x^\lambda$. Since $\lambda$ is considered fixed this is almost the same as the above definition except for multiplying and adding a constant. It is not clear how to select $\lambda$ for one dimensional data. The best way is probably to plot the histograms corresponding to different $\lambda$ values and select one or more informative values of $\lambda$.
+
+As we see in the example below, the original diamond price plot is rather non-informative. The last two plots show interesting bimodal distribution in the transformed scale. One possibility is to model $1/\sqrt{X}$ as a mixture of Gaussian distributions.
+
+\begin{center}
+<<fig=t,height=3>>=
+theme_set(theme_bw(base_size=8));
+print(qplot(price,data=diamonds));
+@
+<<fig=t,height=3>>=
+theme_set(theme_bw(base_size=8));
+print(qplot(price^0.5,data=diamonds));
+@
+<<fig=t,height=3>>=
+print(qplot(log(price),data=diamonds));
+@
+<<fig=t,height=3>>=
+print(qplot(price^(-0.5),data=diamonds));
+@
+\end{center}
+
+Power transforms may also be used when examining the relationship between two data variables. Consider for example the following plot showing the relationship between diamond price and diamond carat (weight). It is hard to draw much information from that plot. Transforming both variables shows a striking linear relationship if both variables are transformed by log.
+
+<<fig>>=
+png('fig1.png',height=200);
+print(qplot(carat,price,data=diamonds));
+invisible(dev.off())
+png('fig2.png',height=200);
+print(qplot(carat,log(price),data=diamonds));
+invisible(dev.off())
+png('fig3.png',height=200);
+print(qplot(log(carat),price,data=diamonds));
+invisible(dev.off())
+png('fig4.png',height=200);
+print(qplot(log(carat),log(price),data=diamonds));
+invisible(dev.off())
+png('fig5.png',height=200); # equivalent plot with tick marks on log scale
+print(qplot(carat,price,log="xy",data=diamonds));
+invisible(dev.off())
+@
+
+\begin{center}
+\includegraphics{fig1}
+\includegraphics{fig2}
+\includegraphics{fig3}
+\includegraphics{fig4}
+\includegraphics{fig5}
+\end{center}
+
+In regression modeling the explanatory variable is often mapped using the power transform to a new variable that is more clearly linearly related to the response. In this case the $\lambda$ value can be estimated by maximizing the likelihood jointly over both the regression parameter and $\lambda$.

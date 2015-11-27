@@ -1,0 +1,2369 @@
+\label{chap:c}
+
+C++ is a programming language that is especially well suited for computationally intensive programs and for interfacing with hardware or the operating system. In this chapter, we describe C++ starting from low-level features such as variable types and control flow, and concluding with object oriented programming and the standard template library. 
+
+In this chapter we consider the latest version of C++ at the time of writing (2015), C++11.
+
+%--------------------------------------------------------
+\section{Compilation} \label{sec:c:compilation}
+
+\begin{defn} The C++ compiler is a program that converts C++ code to a sequence of assembly language instructions that are executed by the CPU (see Chapter 1). The execution of the compiler program is known as the compilation process.
+\end{defn}
+	
+The compilation process is composed of the following two stages.
+
+\begin{enumerate}
+\item Compile files containing C++ code into multiple object code files.
+\item Link multiple object code files into a single executable file containing assembly language instructions. 
+\end{enumerate}
+
+Occasionally, the first stage above is referred to as compilation and the second stage is referred to as linking. In other cases, compilation refers to both stages. 
+
+In large projects containing multiple C++ files, the separation of the compilation process to two stages is particularly useful. If one of the C++ files is revised, the compilation stage (step 1) has to be repeated for 
+that file alone (the object files corresponding to the unchanged C++ files are still valid). The linking stage (step 2) needs to be repeated in order to create a new executable. Avoiding the compilation (stage 1) of the C++ files that were not revised can significantly speed up the compilation process.
+
+Since the executable file contains assembly language instructions, it matches a specific operating system and hardware. As a result, the compilation process must be repeated for each hardware architecture, and the executable that is the result of a compilation process on one hardware architecture may not execute on a second architecture (or in some cases may execute more slowly). 
+
+C++ code is composed of a sequence of case-sensitive statements separated by semi-colons and arranged in functions or classes. The function \texttt{main} is special in that the CPU executes its code whenever the operating system executes the corresponding executable file. 
+
+C++ code is often annotated with comments that provide documentation on the code. Such comments are ignored by the compiler and thus they do not affect the program's functionality. There are two ways to define comments in C++:  (a) text following \texttt{//} that continues until the end of the line, and (b) text between the symbols \texttt{/*} and \texttt{*/} (possibly spanning multiple lines). 
+
+Consider for example the following C++ program that simply returns the value 0 to the operating system (as we see later that the returned value is accessible in the Linux operating system through the variable \texttt{\$?}).
+
+<<engine="Rcpp",eval=FALSE>>=
+// this is a comment.
+/* this is another comment
+   that spans multiple lines. */
+
+int main() {
+  return 0;  // return a value 0 to the operating system
+}
+@
+
+Assuming that the above code is saved as a text file \texttt{foo.cpp} (the standard file name extension for C++ is \texttt{.cc} or \texttt{.cpp}), we can compile and link it in Linux by executing the following terminal command, which calls the standard C++ compiler \texttt{g++}. 
+
+<<engine="bash",eval=FALSE>>=
+# compile and link foo.cpp into an executable file named foo
+g++ foo.cpp -o foo 
+@
+
+The string following the \texttt{-o} flag above indicates the name of the executable file created by the compiler. Above and elsewhere we assume that the Linux terminal uses the bash shell of the zsh shell. Note that while C++ comments are denoted by \texttt{//} or \texttt{/* */}, bash comments are prefixed by a \texttt{\#} symbol.
+
+Alternatively, we can execute the two compilation stages separately: compilation only (using the \texttt{-c} flag) followed by linking, as in the example below.
+
+<<engine="bash",eval=FALSE>>=
+# compile (but do not link) the C++ code in foo.cpp 
+# into the object file foo.o
+g++ -c foo.cpp -o foo.o 
+# link the object file foo.o and create an executable file foo
+g++ foo.o -o foo 
+@
+
+Optimized compilation typically takes longer but produces executable code that runs faster. 
+
+The \texttt{g++} compiler supports the following compilation flags. Consult the \texttt{g++} documentation for more details (for example using the commands \texttt{man g++} or \texttt{info g++} or by searching the online documentation).
+ 
+\paragraph{}
+
+\begin{center} \begin{tabular}{|l|l|}\hline
+flag & effect \\ \hline \hline
+\texttt{-o filename} & specify name of executable file\\ \hline
+\texttt{-c} & compile but not link\\ \hline
+\texttt{-g} & maintain information for a future debugging session\\ \hline
+\texttt{-lm} & link with the standard math library \\ \hline
+\texttt{-llib\_name} & link with the library file \texttt{lib\_name} \\ \hline\texttt{-O3} & optimized compilation (level 3) \\ \hline
+-std=c++0x & compile using the new 2011 C++ specification \\ \hline 
+\end{tabular}
+\end{center}
+
+\paragraph{}
+
+For example, the following shell command compiles multiple C++ files into a single executable, using the C++11 standard, optimized compilation, and linking to the standard mathematical library.
+
+<<engine="bash",eval=FALSE>>=
+g++ -o foo -lm -O3 -std=c++0x foo.cpp 
+@
+
+After compilation, typing the name of the executable file in the terminal executes the corresponding program (assuming (i) the path of the executable file is in the \texttt{PATH} shell environment variable or otherwise the path needs to be explicitly provided and (ii) the user has executable permission for the executable file -- see Section~\ref{sec:os:users}). 
+
+For example, after running the executable corresponding to the C++ file \texttt{foo.cpp} above, the returned value is 0. The Linux commands below execute the executable file and read the value returned by the C++ program (that value is available as the shell variable \texttt{\$?}).
+
+<<engine="bash",eval=FALSE>>=
+# compile and link to create an executable file foo
+g++ -o foo foo.cpp
+# run the executable file foo (including a relative path as prefix)
+./foo
+# display value returned by the compiled program
+echo $?
+
+## 0
+@
+
+We proceed below to explore the C++ programming language. We start with low level features such as variables, control flow, functions, and input and output. We continue with object oriented programming, and follow up with the standard template library, both of which are very useful when programming complex programs. 
+
+%--------------------------------------------------------
+\section{Types, Variables, and Scope} \label{sec:c:typesVar}
+
+Variable types in C++ correspond to types of data such as integers, floating point numbers, ASCII characters (see Chapter~\ref{chap:hardware}), or boolean true/false values. Variables are specific instantiation of variable types and thus hold actual values. There may be many variables holding the same variable type, but each distinct variable has a variable name that is used for referencing it. C++ is a strongly typed language in the sense that variables that are defined to be of a specific type cannot be modified to hold a different type. 
+
+Classes are similar to types, but they hold more complex information and can be customized by the programmer. In the same way that a variable is an instantiation of a specific type, an object is an instantiation of a specific class. We describe below types and variables and postpone a description of classes and objects to Section~\ref{sec:c:oop}.
+
+\subsection{Types}
+
+The type \texttt{int} is commonly used to represent integers, while the type \texttt{float} is commonly used to represent real numbers using floating point representation (see Chapter 1 for a description of integers and floating point representations). The precise range of values that can be represented (and the approximation quality in the case of the floating point representation) depends on the number of bytes allocated to each type, which is hardware dependent. The typical size of \texttt{int} and \texttt{float} types is 4 bytes or 32 bits. 
+
+The types \texttt{long} and \texttt{double} are similar to  \texttt{int} and \texttt{float}, respectively, but are usually allocated more bytes and thus may represent larger numbers (and with higher approximation accuracy in the case of \texttt{double} floating point representation). 
+
+The type \texttt{char} uses 8 bits to represent numbers between -128 and 127. It is also used to represent text characters such as ``a'' or ``M'' using the ASCII encoding (see Chapter 1). 
+
+The type \texttt{bool} represents two possible values: \texttt{true} and \texttt{false}. Most numeric types can represent either positive or negative values, but have an \texttt{unsigned} version that represents  only non-negative numbers. 
+
+\paragraph{}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+type & value & typical size (bits)\\ \hline
+\texttt{int} & integers & 32\\
+\texttt{long} & integers & 64\\
+\texttt{char} & ASCII (text) character & 8 \\
+\texttt{bool} & \texttt{true} or \texttt{false} & 1\\
+\texttt{float} & real numbers & 32\\
+\texttt{double} & real numbers & 64\\
+\texttt{unsigned T} & non-negative version of type \texttt{T} & same as \texttt{T}\\
+ \hline
+\end{tabular}
+\end{center}
+
+\subsection{Variables} \label{sec:c:variables}
+
+As mentioned earlier, variables are instantiations of types. Each variable is assigned a specific type when it is defined and that type cannot be modified later on. 
+
+A C++ variable definition statement includes the variable type followed by the variable name. Several variables of the same type may be defined using comma separators. Variable names are case-sensitive and must avoid special characters and existing C++ keywords. It is common to name variables with multiple words by separating the words with an underscore, for example \texttt{training\_data}, or alternatively by capitalizing the first letter of each word, except perhaps the first word, for example \texttt{trainingData}.
+
+The code below defines three variables: a variable \texttt{age} of type \texttt{int} and two variables \texttt{height} and \texttt{weight} of type \texttt{double}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int age; // age is a variable of type int (integer)
+double height, weight; // two double variables
+@
+
+C++ code typically resides inside \texttt{main()} or some other function or object definition (though some exceptions exist as in the case of global variables). However, for simplicity we sometimes omit the embedding and display isolated code fragments.
+
+The variable definitions above did not assign a value to the variables. Variables may be initialized when they are defined, or later on, using the 
+assignment operator \texttt{=}. Uninitialized variables may have unexpected values and should not be used until they are assigned values. It is customary to define variables close to where they are used and assign values to them as soon as possible, and to avoid defining variables that are never assigned values.
+
+Standard algebraic expression may be used to manipulate integers and floating point variables. The addition operator \texttt{+}, subtraction operator \texttt{-}, and multiplication operator \texttt{*} work as expected with the usual rules of operator precedence (for example \texttt{2*3+1} is 7 rather than 8). Parenthesis may be used to override the standard operator precedence or to make the code more readable. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int age = 32; // integer variable holding 32
+double height; // unassigned variable
+height = 63.4; // assigning value 63.4 to height
+float pi = 3.14; // new float variable
+float pi_squared = pi * pi; // new float variable
+@
+
+Marking a variable as \texttt{const} during its definition indicates that its value is fixed and may not change later on. Attempting to modify a \texttt{const} variable after it is defined will result in compilation error.
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 2; 
+const int b = 3;
+a = 6;  // ok
+b = 6;  // error (b cannot be modified)
+@
+
+The 2011 C++ standard (C++11) includes a way of defining variables whose types are implicitly inferred by the compiler, rather than explicitly specified by the programmer. These variables are marked by a the\texttt{auto} keyword. 
+
+<<engine="Rcpp",eval=FALSE>>=
+double height = 58.0, weight = 155.2;
+auto bmi = 703 * height / (weight * weight); // inferred type
+@
+
+\subsection{Scope}
+
+The scope of a variable corresponds to the portion of code in which it is recognized. Variables defined inside curly braces have scope that is limited to the portion of the curly braces code block that follows the variable definition. Multiple curly braces blocks may be nested. Variables defined outside of any curly braces are considered global variables, and have scope throughout the source file.
+
+<<engine="Rcpp",eval=FALSE>>=
+{
+  int a=2;
+  a = a + 1; // ok, a is recognized
+  {
+    int b = a; // ok, a is still in scope
+  }
+  a = b; // error, b is out of scope and is undefined
+}
+a = a + 1; // error, a is out of scope
+@
+
+In some cases, a variable may be defined inside a curly braces block that has the same name as a variable defined before the curly braces block. In this case the variable defined inside the curly braces block masks the variable defined before the curly braces block, making the latter inaccessible until the inner variable goes out of scope. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 2;  
+{
+  int a = 3;  // inner a (a=3) masks the outer a (a=2)
+  int b = a;  // b is assigned the value 3
+}
+// inner a is out of scope and outer a is no longer masked
+int c = a; // c is assigned the value of the outer a (a=2) 
+int d = b; // error: b is no longer in scope
+@
+
+%----------------------------------------------------------------------
+\section{Operators and Casting} \label{sec:c:operators}
+
+\subsection{Operators}
+
+Unary operators take a single argument and return a value, while binary operators take two arguments and return a value. Unary operators appear before their argument, while binary operators appear between their two arguments. For example the unary negation operator applied to the argument 2, \texttt{-2}, returns a value that is equal to the binary subtraction operator with a 0 as its first argument and a 2 as its second argument: \texttt{0-2}.
+
+In most cases operators do not change the value of their arguments, for example \texttt{x+y} does not change the values of the variables \texttt{x} and \texttt{y} and \texttt{-x} does not change the value of \texttt{x}. In both cases a new value is returned by the original values stored in \texttt{x} and \texttt{y} are unchanged. Notable exceptions are the binary assignment operator \texttt{x=y}, which assigns the value of \texttt{y} to \texttt{x} and the unary operators \texttt{++x}, \texttt{--x}, which assign to their argument its original value incremented or decremented by one. 
+
+The following table lists commonly used operators.  
+
+\begin{center}
+\begin{tabular}{|l|l|}
+	\hline
+operator & semantics\\ \hline \hline
+\texttt{x+y} & arithmetic plus\\
+\texttt{x-y} & arithmetic minus\\
+\texttt{-x} & arithmetic negation\\
+\texttt{x*y} & arithmetic multiplication\\
+\texttt{x/y} & arithmetic division\\
+\texttt{x\%y} & remainder after division \\
+\texttt{x=y} & assignment of \texttt{y} to \texttt{x}\\
+\texttt{x==y} & equality test\\
+\texttt{x!=y} & inequality test\\
+\texttt{x<y} & arithmetic less than\\
+\texttt{x<=y} & arithmetic less than or equal to\\
+\texttt{x>y} & arithmetic greater than\\
+\texttt{x>=y} & arithmetic greater than or equal to\\
+\texttt{++x} & increment \texttt{x} by one\\
+\texttt{--x} & decrement \texttt{x} by one\\
+\texttt{x\&\&y} & logical AND (true if x and y are true)\\
+\texttt{x||y} & logical OR (true if x or y are true)\\
+\texttt{!x} & logical NOT (true if x is false)\\ 
+\texttt{sizeof(x)} & returns size of variable x in bytes\\
+\texttt{x,y} & evaluate \texttt{x}, and then evaluate and return \texttt{y}  \\\hline
+\end{tabular}
+\end{center}
+
+\paragraph{}
+
+The logical operators above return a \texttt{bool} value: \texttt{true} if the corresponding condition hold and \texttt{false} if it does not hold.
+
+\paragraph{}
+
+When multiple operators co-occur, standard operator precedence and associativity rules apply, for example \texttt{a*2+1} is interpreted as first multiply \texttt{a} by two and then add one to the result. Parenthesis can be used to make the code more readable or to override the standard behavior, for example \texttt{a*2+1} is equivalent to \texttt{(a*2)+1} but \texttt{a*(2+1)} returns \texttt{a} times 3. The code below illustrates the use of operators and parenthesis. 
+
+<<engine="Rcpp",eval=FALSE>>=
+bool result;
+result = (3 == 3); // result equals true
+result = (3 > 3); // result equals false
+int a = 3, b;
+b = (++a); // b and a both equal 4
+result = ((4 > 3) && (4 < 5)); // result equals true
+result = !(1 > 2); // result equals true
+a = 10 % 3; // a equals 1 (remainder after dividing 10 by 3)
+b = (a = 3); // assign 3 to a, and then assign that value to b
+@
+
+\subsection{Type Conversions} \label{sec:c:casting}
+
+Since C++ is strongly typed, the type of a variable cannot be modified. A value of one type, however, can be converted to a related value of another type and assigned to a variable of a different type.
+
+\begin{defn}
+Casting, or type conversion, is the process of converting a value of one type to a related value of another type.  
+\end{defn}
+
+When both types are numeric, type conversions produce expected results. For example, converting a \texttt{float} value that equals 0.0 to \texttt{int} produces the integer 0. Converting an \texttt{int} value 3 to a \texttt{float} produces the floating point value 3.0. 
+
+Converting a less accurate type to a more accurate type (for example converting \texttt{int} to \texttt{long}) does not result in any loss of information. Converting a more accurate type to a less accurate type may result in a loss of accuracy. For example converting a \texttt{float} 3.2 to an \texttt{int} produces the integer 3. 
+
+We distinguish between explicit type conversions and implicit type conversions. Explicit type conversions are specified by the programmer, while implicit type conversions are triggered by the compiler. An explicit type conversion instructs the compiler to copy a value of one type to a related value in a different type.  
+
+Below is an example of explicit casting. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int height_int;
+float height = 58.3;
+height_int = (int)height; // convert 58.3 to int 
+@
+
+Implicit type conversions are triggered by the compiler on a number of occasions. In general, implicit type conversion occur when the expected type is different than the present type.
+
+\begin{itemize}
+\item Non-boolean types are converted to boolean types when logical conditions are checked. Specifically, zero is converted to \texttt{false} and non-zero values are converted to \texttt{true}.  For example in the C++ statement \texttt{!3} the integer 3 is converted to a \texttt{bool} \texttt{true} value, which is then negated producing a \texttt{false} value. 
+\item In variable initialization or assignment between related types, the value on the right hand side is converted to the type of the variable on the left hand side. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 3.2;  // 3.2 is converted to the integer 3
+int b;
+b = 3.2;  // same casting as above
+b = 3.0 / 2.0;  // the value 1.5 is converted to the integer 1 
+@
+
+\item When an operator that requires both arguments to have identical types receives mixed types, the two types are converted to a common type. If the two types are integer and floating point, the integer is converted to a floating point. If the two types are both integers or both floating points of different accuracy (for example \texttt{int} and \texttt{long}), the less accurate type is converted to the more accurate type. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 1, b = 2;
+float f = 2.0;
+// below, in the division a / f the integer a is converted to 
+// a float 1.0 resulting in a division of two floats 1.0 / 2.0 
+// that equals 0.5
+float g = a / f;  // g equals 0.5
+// Below, there is no type conversion during the division a / b
+// The division of one integer 1 by another integer 2 gives 
+// the integer 0, which is then converted to a float 0.0
+// that is assigned to h
+float h = a / b;  // h equals 0.0
+@
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{References and Pointers} \label{sec:c:references}
+
+References and pointers in C++ refer to a variable or an object (see Section~\ref{sec:c:oop} for more information on objects). They allow creating multiple entities that refer to a single variable or object in memory. Pointers are also closely associated with arrays, which will be introduced in the next section. 
+
+\subsection{References}
+
+References in C++ define alternative names for existing variables or objects and they are marked by appending a \texttt{\&} symbol to their type, for example \texttt{int\&} is a reference to an \texttt{int} variable. References do not define new variables and any attempt to read or modify their value will affect the variable or object that is referred to. Once a reference is defined, it may not be altered to refer to a different variable or object. For this reason references must be initialized at the moment they are defined. There may be a large number of  references referring to a single variable or object.
+
+The code below defines several variables and references. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 2, c = 3;
+int& ref_a = a; // ref_a is a reference to the variable a
+int b = ref_a; // has same effect as b = a
+ref_a = 5; // has same effect as a = 5 
+int& ref1_c = c;
+int& ref2_c = c;  // both ref1_c and ref2_c refer to c 
+@
+
+\subsection{Pointers}
+
+A pointer is a variable containing the memory address where another variable or an object is stored. Pointers are denoted by appending the type with a \texttt{*} symbol, for example \texttt{int*} is a pointer to an \texttt{int} variable. The type of a pointer, for example \texttt{int*}, ensures that the compiler knows how to interpret the contents of the memory that is pointed to. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int *pa;
+int *pb;  // pa and pb are pointers to int
+float* fx;
+float* fy;  // fx and fy are pointers to float
+// defining multiple pointers using an alternative style 
+float *fx, *fy; 
+@
+
+After a pointer \texttt{x} is defined, the unary \texttt{*} operator (as in \texttt{*x}) refers to the content of the memory address pointed to by \texttt{x} (recall that it is crucial to have the pointer type agree with the type of the data at the corresponding memory). The unary \texttt{\&} operator, \texttt{\&x}, returns the memory address of the variable or object \texttt{x}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 2;
+int* b; // uninitialized pointer - may contain unexpected address
+int* c = &a; // address of variable a is assigned to pointer c
+int d = *c; // value at address c is assigned to d (d = 2)
+// define a new pointer e that points to the same memory as c
+int* e = c; 
+float f = 3.0;
+float* fp = &f;  // ok
+int* a = &f;  // problem: a is of type int* but points to float
+@
+
+Programming errors due to pointers are common in C++ and can be hard to discover. A standard example is accessing a prohibited or uninitialized memory location. It is best to avoid defining uninitialized pointers and to ensure that pointers always point to legitimate memory address.
+
+A double pointer is a variable that holds a memory address whose content is a pointer. Thus, if \texttt{pp} is a double pointer to int, then \texttt{*(*pp)} or just \texttt{**pp} is the corresponding \texttt{int} variable. A double pointer \texttt{x} to type \texttt{T} is defined by the statement \texttt{T** x;}. C++ also allows triple pointers, but they are less common than pointers and double pointer. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a = 2;
+int* b = &a; // pointer b points to a
+int** c = &b; // double pointer c points to b
+// c now holds the address of b, which holds the address of a
+int* d = *c; // contents of b (address of a) is assigned to pointer d
+int e = *(*c); // contents of a (2) is assigned to e
+@
+
+C++ allows references to pointers but not pointers to references.
+
+\section{Arrays}
+
+An array represents a contiguous portion of memory that can be used to store a sequence of variables or objects. We describe below one dimensional arrays, followed by multidimensional arrays. 
+
+\subsection{One Dimensional Arrays}
+
+The square brackets operator references specific elements of the array. Square brackets are also used when defining arrays. Some examples appear below.
+
+<<engine="Rcpp",eval=FALSE>>=
+int A[10];  // define an array of 10 integers
+A[0] = 1;  // assign 1 to the first element
+A[3] = 2;  // assign 2 to the fourth element
+int b = A[3];  // assign to b the contents of the fourth element (2)
+@
+
+Once an array has been defined in C++, its length cannot be modified. Growing or shrinking an existing array requires defining a new array (that is larger or smaller) and copying elements of the old array to the new array. 
+
+There is a close connection between arrays and pointers in C++. An array in C++ may be considered as a pointer to the first element of the array. Similarly, the bracket notation \texttt{x[k]} may be applied to a pointer \texttt{x} to refer to the contents of the pointer offset by \texttt{k} positions. The precise memory address pointed to be \texttt{x[k]} is \texttt{x} plus \texttt{k} times the size of an array element (the size of an array element depends on the type of elements the array holds, for example \texttt{int} or \texttt{double}). Some examples appear below.
+
+<<engine="Rcpp",eval=FALSE>>=
+// using an array as a pointer
+int A[10];  
+*A = 3; // assign a value of 3 to the first element 
+*(A+2) = 4; // assign a value of 4 to the third element
+// using a pointer as an array
+int* pa = A + 1; // pa points to the second element of A
+pa[1] = 5;  // assign a value of 5 to the third element of A
+@
+
+A convenient way to define arrays with predefined values is using the following notation.
+
+<<engine="Rcpp",eval=FALSE>>=
+// define an array of size 10 containing the integers 0,1,...,9
+int A[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+// array size may be omitted in this case
+int A[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+// define an array of size 10 initialized to default values (0 for int)
+int A[10] = {};
+// define an array of size 10 initialized to 1,0,...,0
+int A[10] = {1};
+@
+
+C++ assumes that the array size can be determined in compilation time. Specifically, the array size must be a constant variable or a numeric expression and it cannot be a variable (since the value of a non-const variable is indeterminable during compilation). This significant restriction can be alleviated using dynamic memory allocation (see Section~\ref{sec:c:DMA}).
+
+<<engine="Rcpp",eval=FALSE>>=
+const int n1 = 3;
+double D1[n1];  // fine
+int n2 = 3;
+double D2[n2];  // error
+@
+
+The operating system ensures that when a program accesses the elements of a defined array, the program does not interfere with other programs or with the operating system. However, a dangerous and unpredictable behavior may occur when a program accesses a memory location that is outside the range of an allocated array. Such software bugs are hard to detect and may lead to erratic run-time behavior and possible the untimely termination of the program.
+
+<<engine="Rcpp",eval=FALSE>>=
+int A[10] = {};
+A[13] = 3;  // dangerous bug - may lead to erratic run-time behavior
+@
+
+
+\subsection{Multidimensional Arrays}
+
+In many cases it is convenient to refer to a collection of values arranged as a two dimensional table or a higher dimensional array. Such multidimensional arrays are defined using multiple pairs of square brackets. Similarly, multiple pairs of square brackets are used to reference a particular element of the array. As with one dimensional arrays, the sizes of each dimensions must be specified by constant variables or  numeric expressions.
+
+<<engine="Rcpp",eval=FALSE>>=
+// A is 3 by 4 table of integers initialized to default values 
+// (0 in the case of int variables)
+int A[3][4] = {};  
+A[0][0] = 2; // assign 2 to first row, first column element 
+A[0][1] = 3; // assign 3 to first row, second column element 
+A[1][2] = 4; // assign 4 to second row, third column element 
+// a 3 by 4 by 5 array
+int B[3][4][5] = {};   
+B[0][0][0] = 2; // first row, first column, first layer element 
+B[0][1][2] = 2; // first row, second column, third layer element 
+@
+
+Multidimensional arrays in C++ are really arrays of arrays in the case of two dimensional arrays or arrays of arrays of arrays in the case of three dimensional arrays (and and so on). Thus, if \texttt{A} is a two dimensional array (for example defined using \texttt{int A[3][4]}) then \texttt{A[1]} is an array corresponding to the second row of the table \texttt{A}. 
+
+\section{Preprocessor and Namespaces} \label{c:preprocessor}
+
+The preprocessor is a program that runs before the start of the compilation stage (alternatively, preprocessing is sometimes considered as part of the compilation process). It leaves most of the code intact with the exceptions of preprocessor directives, which are statements prefixed by the symbol \texttt{\#} (there is no need to include a semicolon at the end of the line). The preprocessor removes the preprocessor directives and manipulates the program accordingly. 
+
+A popular preprocessor directive is the \texttt{\#include <X>} statement, which pastes a header file \texttt{X} in place of the directive. The program can then use constants, functions, and classes that are defined in the header file. Some notable \texttt{\#include} statements are \texttt{\#include <iostream>}, which includes input and output functionality, \texttt{\#include <string>}, which includes input and output functionality, and \texttt{\#include <cmath>}, which include mathematical constants and functions. The standard notation for including header files that are contributed by the programmer is \texttt{\#include "X"}.
+
+
+<<engine="Rcpp",eval=FALSE>>= 
+// include the C++ input and output header file 
+#include <iostream>
+// the statement below prints 3 (cout is a function defined 
+// in the header file iostream)
+int main () {
+  std::cout << 3; 
+  return(0);
+}
+@
+
+<<engine="Rcpp",eval=FALSE>>= 
+// include the header file written by the programmer
+#include "my_header_file.h"
+// call my_function, which is a function defined in
+// the header file my_header_file.h
+int main () {
+  my_function();
+  return(0);
+}
+@
+
+In either case, the .h header file needs to reside in one of the standard directories containing C++ header files (for example \texttt{/usr/include} or its subdirectories) or the current directory. If the header file is not in the standard directory containing header files or in the current directory, a relative or absolute directory path may be included in the preprocessor directive (for example \texttt{\#include "subdir/my\_header\_file.h"}).
+
+Header files typically contain only definitions, and not the implementation of the definitions. For example a header file may contain the line \texttt{int foo();} without containing the implementation of the function \texttt{foo}. The implementation code typically resides in a non-header file that is compiled beforehand and is linked to the program (see Section~\ref{sec:c:compilation}). This guarantees that the implementation code is not compiled every time the file containing the header file is compiled. 
+
+The preprocessor directive \texttt{\#define X Y} instructs the preprocessor to replace all occurrences of \texttt{X} with \texttt{Y}. This is a useful way to refer to constants by their role rather than their numeric values. Another advantage is that if the value of the constant changes, a single location in the file has to be edited (the \texttt{\#define} command). 
+
+<<engine="Rcpp",eval=FALSE>>=
+// The code below is easy to comprehend and maintain
+#define WIDTH 80
+int page_width = WIDTH;
+int two_page_width = 2 * WIDTH;
+// This code is harder to comprehend and maintain
+int three_page_width = 3 * 80;
+@
+
+The \texttt{\#define} directive may also be used to define more complex macros. For example the code below replaces all occurrences of \texttt{arraysize(A)} with the number of elements of \texttt{A}
+(assuming that \texttt{A} is an array). The calculation divides the size of the array in bytes by the size of each element. 
+
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#define arraysize(array)	(sof(ay)siz((ay)[)
+
+n() main()
+{
+  int A[10];
+  std::cout << arraysize(A); // prints the size of the array (10)
+  return 0;
+}
+@
+
+It is often the case that some header files contain \texttt{\#include} statements that are used to include other header files within them. A potential problem arises if one header file is included more than one time in a single file (the compiler may complain that there are multiple definitions of the same function or class). For example assuming that \texttt{my\_header\_file1.h} and \texttt{my\_header\_file2.h} both contain the line 
+\texttt{\#include "my\_header\_file3.h"} in them, the following program will lead to repeated definitions.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include "my_header_file1.h"
+#include "my_header_file2.h"
+// constants or functions in my_header_file3 are defined twice
+@
+
+It is customary to solve this problem using the \texttt{\#ifndef X} and \texttt{\#endif} preprocessor directives, which instructs the preprocessor to ignore everything between these two directives if \texttt{X} is already defined. For instance, in the example above we can avoid repeated definitions by copying the contents of \texttt{my\_header\_file3.h} inside the following structure.
+
+<<engine="Rcpp",eval=FALSE>>=
+#ifndef _MY_HEADER_3_GUARD
+#define _MY_HEADER_3_GUARD
+
+// copy original contents of my_header_file3.h here
+
+#endif
+@
+
+In this way, the definitions within \texttt{my\_header\_file3.h} will appear a single time, no matter how many times the statement \texttt{\#include "my\_header\_file3.h"} appear.
+
+A namespace corresponds to a collection of variables and function names. The \texttt{using namespace X} command instructs the compiler to look at the namespace \texttt{X} when it tries to recognize names of variables or functions. Using namespaces allows multiple developers working independently to define different functions and variables with the same names. A program that uses these variables or functions can then disambiguate between the different definitions by including an appropriate \texttt{using namespace X} statement. An alternative is to prefix the variable or function name with the name of the namespace followed by a \texttt{::} notation. 
+
+A common namespace representing the standard library is \texttt{std}. The statement \texttt{using namespace std} brings the standard library namespace into scope. 
+
+<<engine="Rcpp",eval=FALSE>>=
+std::cout << 3;  // print 3 (cout is defined std namespace)
+// the statement below allows dropping the std:: prefix
+using namespace std;
+cout << 3;
+@
+
+
+\section{Strings, Input, and Output}
+
+The traditional way in C, a precursor of C++, to represent text strings was to use an array of \texttt{char} variables, with each \texttt{char} variable represents a text letter using ASCII encoding. C++ includes the more sophisticated concept of a string that includes additional functionality. Unlike an array, a string may be modified after it is created. Additionally, C++ has functionality for concatenating, comparing, and transforming strings.  
+
+Strings may be initialized using a sequence of characters surrounded by double quotes. Specific string elements are referenced using the square bracket array notation.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <string>
+using namespace std;
+
+int main() {
+  string s1;  // define an empty string
+  string s2 = "hello world"; // define a string with content
+  int sz = s2.size(); // assign size of string s2 to variable
+  char a = s2[1];  // access second character of s2 ("e") 
+  string s3 = s2 + s2; // concatenate s2 with itself
+  bool b = s2.empty();  // true if s2 is an empty string
+  return 0;
+}
+@
+
+The function \texttt{to\_string} converts a numeric variable type to a string and the functions \texttt{stoi} and \texttt{stod} convert strings to integer and double variables, respectively (assuming that the string describes a number). 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <string>
+using namespace std;
+
+int main() {
+  int a = 123;
+  string s1 = to_string(a);  // assign "123" to s1
+  int b = stoi(s1);  // assign integer 123 to b
+  double d = stod(s1); // assign floating point 123.0 to d
+  return 0;
+}
+@
+
+In C++, \texttt{cin} reads contents from the standard input, typically character strokes entered by the keyboard when the program is executing. Specifically \texttt{cin << x} takes that input, separates it by white spaces and assigns the first constituent into the variable \texttt{x}. Multiple variables may be included in a single \texttt{cin} command by separating them with the \texttt{<<} symbol. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+  string s1, s2;
+  // read a string separated by white space from standard
+  // input into s1
+  cin >> s1; 
+  // read two strings separated by white spaces (first into s1 and 
+  // then into s2)
+  cin >> s1 >> s2; 
+  return 0;
+}
+@
+
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+  int c, d;
+  // read a string separated by white space from standard input, 
+  // convert the first two constituents to two integers, and 
+  // store them in c and d
+  cin >> c >> d;
+  return 0;
+}
+@
+
+The \texttt{getline} function reads an entire line from standard input (a line is considered to be string ending in a newline character). 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+  string s3;
+  // read a line (possibly containing white spaces) from standard input 
+  // and assign it to s3
+  getline(cin, s3);
+  return 0;
+}
+@
+
+In C++ \texttt{cout} prints strings or numeric variables to standard output, which typically the terminal in which the program is executing. Specifically, \texttt{cout << x} prints the value of the variable or string \texttt{x}. Multiple arguments may be used by separating them with \texttt{<<}. The expression \texttt{endl} corresponds to the end of line character.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+  string s1 = "hello world";
+  // display hello world followed by an end of line
+  cout << s1 << endl; 
+  // display hello world followed by ! and end of line
+  cout << s1 << "!" << endl; 
+  return 0;
+}
+@
+
+Compiling and executing the program above results in the following output (the \texttt{\#\#} symbol below denotes that this is the output of the program).
+
+<<engine="Rcpp",eval=FALSE>>=
+## hello world
+## hello world!
+@
+
+%--------------------------------------------------------
+\section{Control Flow} \label{c:controlFlow}
+
+When a program is launched, the statements in the \texttt{main} function are executed from top to bottom, unless the control flow is modified using one of the mechanisms below. 
+
+\subsection{If-Else Clauses}
+
+An if-else clause evaluates a condition and based on its value determines which of two clauses will be executed. If the condition holds the first sequence of statements surrounded by curly braces will be executed. If the condition does not hold, the second sequence of statements surrounded by curly braces and coming after the \texttt{else} keyword will be executed. If the sequence of statements contains a single statement the curly braces may be omitted. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int a;
+cin >> a; // read a from terminal
+// replace a by its absolute value
+if (a < 0) {
+  a = -a;  // if a is negative, make it positive
+} else {
+  a = a;  // if a is non-negative, leave it as is
+}
+@
+
+As the example above shows, it is customary to indent the code inside the curly braces with compared to the code outside of the curly braces. Omitting the else clause is equivalent to specifying an empty else clause. For example, the following example achieves the same computation as the one above.
+
+<<engine="Rcpp",eval=FALSE>>=
+int a;
+cin >> a;
+// replace a by its absolute value
+if (a < 0) 
+  a = -a; // curly braces omitted (single statement)
+@
+
+
+\subsection{While-Loops}
+
+A while loop repeats the statements within the curly braces as long as the specified condition is met. The optional \texttt{continue} statement skips the remainder of the current iteration and resumes execution from the start of the next iteration (as long as the loop condition is satisfied). The optional \texttt{break} statement discontinues the loop and resumes execution at the next command following the loop.
+
+An example of a simple while loop appears below.
+
+<<engine="Rcpp",eval=FALSE>>=
+// Assigns 4! = 4*3*2 = 24 to the variable ret
+// 3 loop iterations will be executed (on fourth iteration the
+// condition 1 > 1 fails).
+int val = 4, ret = 1;
+while (val > 1) {
+  ret = ret * val;
+  val = val - 1;
+}
+@
+
+The example below demonstrates the \texttt{break} statement. Note that the condition \texttt{(1)} in \texttt{while(1)} indicates that the loop will never end unless a \texttt{break} statement is encountered.
+
+<<engine="Rcpp",eval=FALSE>>=
+// similar to previous example with break statement
+int val = 4, ret = 1;
+while (1) { 
+  if (val <= 1) {
+    break;
+  }
+  ret = ret * val;
+  val = val - 1;
+}
+@
+
+The example below demonstrates the \texttt{continue} statement. The code computes $4\cdot 2=8$. During the iteration that multiplies by 3, the \texttt{continue} statement is encountered and the remainder of the current iteration is skipped (the next iteration resumes afterwards).
+
+<<engine="Rcpp",eval=FALSE>>=
+// computes = 4*2 (iteration that multiplies by 3 is skipped)
+int val = 4, ret = 1;
+while (1) {
+  if (val == 3) { 
+    val = val - 1;
+    continue;
+  }
+  if (val <= 1) {
+    break;
+  }
+  ret = ret * val;
+  val = val - 1;
+}
+@
+
+\subsection{For-Loops} \label{sec:c:forLoops}
+
+The condition of the for-loop is separated into three components, separated by semicolons. The first component initializes variables at the beginning of the loop execution. The second component is the condition that controls the loop execution (iterations are executed as long as it holds). The third component is executed at the end of each iteration, for example incrementing an index variable.
+
+The example below iterates over elements of an array. The first component of the condition \texttt{i = 0} initializes an iteration variable \texttt{i} to 0 at the start of the loop. The second component \texttt{i < 10} implies that iterations will be executed as long as the iteration variable \texttt{i} is smaller than 10. The last component \texttt{++i} implies that the iteration variable is incremented by one at the end of each iteration. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+int main() {
+int an_array[10], i;
+  // initialize an_array to hold 0, ..., 9
+  // 10 iterations are executed, corresponding to
+  // i = 0, 1,..., 9 
+  for (i = 0; i < 10; ++i) {
+    an_array[i]=i;
+  }
+  // print the values of the array
+  for (i = 0;i < 10; ++i) // omit curly braces (single statement)
+    cout << an_array[i] << " "; 
+  cout << endl;
+  return 0;
+}
+@
+
+Note that we omitted the curly braces associated with the second \texttt{for} loop since it contained a single command. This applies also to the first \texttt{for} loop, but we decided in this case to leave the curly braces. Leaving the curly braces or removing them in such case depends on the style guidelines or personal preference, but it is best to have a consistent policy (unlike the example above).
+
+Compiling the above program and executing it gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 1 2 3 4 5 6 7 8 9
+@
+
+The new C++ specification, C++11, includes a variation of for-loops using the syntax \texttt{for(x : X)} where \texttt{X} is an array or a different collection of variables or objects and \texttt{x} is a variable that assumes a different value of \texttt{X} every iteration. This revised syntax is easier to read and less likely to result in bugs such as accessing inappropriate memory. For example, the code above can be rewritten as follows with the same effect as the code above.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+  int an_array[10], i=0;
+  for (auto& elem : an_array) {
+    elem = i;
+    ++i;
+  }
+  for (auto& elem : an_array)
+    cout << elem << " ";
+  cout << endl;
+  return 0;
+}
+@
+
+Compiling the above program with the \texttt{-std=c++0x} compilation flag (to indicate that we are using C++11) and executing it gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 1 2 3 4 5 6 7 8 9
+@
+
+Note that the iteration variable \texttt{elem} in both for-loops is specified as \texttt{auto}, implying that its type is inferred automatically by the compiler (see Section~\ref{sec:c:variables}). The symbol \texttt{\&} in \texttt{(auto \&elem : an\_array)} indicates that \texttt{a} is a reference rather than a standard variable, implying that modifying \texttt{elem} will modify the elements of the array \texttt{an\_array}.
+
+For example, modifying the condition of the first for-loop above from \texttt{auto\& elem : an\_array} to \texttt{auto elem : an\_array} would leave the original array elements unchanged and un-initialized (and consequentially printing uninitialized array elements). Below is an example of such an output (different executions may give different results since uninitialized variables have unpredictable values).
+
+<<engine="Rcpp",eval=FALSE>>=
+0 0 260849664 1 1867269568 32767 0 32767 1867269920 32767
+@
+
+In most cases involving for loops with the new C++ syntax, the use of \texttt{auto\&} or \texttt{const auto\&} as the loop variable is preferred over \texttt{auto} since there is no need to copy a variable or object residing in memory to a new local variable. The use of \texttt{const auto\&} is preferred if the for loop is does not modify the array elements. 
+
+Both while-loops and for-loops can be nested. The example below shows how two nested for-loops are used to initialize the elements of a two dimensional array to contain consecutive integers.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+int main() {
+  int i, j;
+  int table[10][10];  // 10x10 2D array
+  // initialize table to hold the values 0,...,99
+  for (i = 0; i < 10; ++i)
+    for (j = 0; j <  10; ++j)
+      table[i][j] = i*10+j;
+  // print the table
+  for (i = 0; i < 10; i++)
+    for (j = 0; j <  10; ++j) {
+      cout << table[i][j] << " ";
+    }
+    cout << endl;
+  }
+}
+@
+
+Executing the program above produces the following output to the standard output. Note that the inner for loop iterates over columns (iteration variable \texttt{j}) and the outer for loop iterates over rows (iteration variable \texttt{i}).
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 1 2 3 4 5 6 7 8 9 
+## 10 11 12 13 14 15 16 17 18 19 
+## 20 21 22 23 24 25 26 27 28 29 
+## 30 31 32 33 34 35 36 37 38 39 
+## 40 41 42 43 44 45 46 47 48 49 
+## 50 51 52 53 54 55 56 57 58 59 
+## 60 61 62 63 64 65 66 67 68 69 
+## 70 71 72 73 74 75 76 77 78 79 
+## 80 81 82 83 84 85 86 87 88 89 
+## 90 91 92 93 94 95 96 97 98 99
+@
+
+
+%--------------------------------------------------------
+\section{Functions} \label{sec:c:functions}
+
+It is convenient to identify sequences of statements that correspond to specific tasks, and that may be reused multiple times in one or more programs. C++ offers a mechanism to organize such collections of statements as functions. When a function is called, the function body is executed, followed by resumed execution of the code that appears after the function call. 
+
+For example, executing the code below prints the numbers 1 2 3, with the number 2 printed by the function \texttt{print\_two}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+# include <iostream>
+using namespace std;
+
+// function print_two prints 2 to standard output
+void print_two() {
+  cout << 2 << endl;
+}
+
+int main() {
+  cout << 1 << endl;
+  print_two();  // execute the function print_two
+  cout << 3 << endl;	
+  return 0;
+}
+@
+
+Executing the program above displays the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 1
+## 2
+## 3
+@
+
+
+\subsection{Returned Value}
+
+The function may communicate its result to the calling environment in two fundamental ways: (a) using a return value, or (b) by modifying a portion of the memory that is accessible by the calling environment. We describe option (a) below as it is simpler and postpone option (b) to Section~\ref{sec:c:functions:pointers}.
+
+When the function is defined the variable type returned by the function is prefixed to the function name. A \texttt{void} return type indicates that the function does not return any value (see function \texttt{print\_two} above). 
+
+For example, the function below returns the value of 2, and the code below prints the same sequence 1 2 3 as the code above. 
+
+<<engine="Rcpp",eval=FALSE>>=
+# include <iostream>
+using namespace std;
+
+// function return_two returns an int variable that equals 2
+int return_two() {
+  return 2;
+}
+
+int main() {
+  cout << 1;
+  cout << return_two();  // print returned value
+  cout << 3 << endl;	
+  return 0;
+}
+@
+
+\subsection{Function Parameters}
+
+The statements inside a function may depend on parameters that are passed to the function by the calling environment. In the function definition, the list of parameters appears inside the parenthesis, separated by commas. When the function is called, specific values corresponding to these parameters have to be specified.
+
+For example, the code below has a function that computes the sum of two values that are passed to it as arguments by the calling environment. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+int add_two(int a, int b) {
+  return(a + b); 
+}
+
+int main() {
+  // print the value 3 returned by add_two(1, 2)
+  cout << add_two(1, 2) << endl; 
+  return 0;
+}
+@
+
+\subsection{Function Definition and Function Declaration}
+
+The examples above showed function definitions: the return value, followed by the function name, followed by the list of parameters and the code implementing the function. A function declaration is the same as a function definition, except that it omits the implementation code. The example below lists a function definition followed by a function declaration. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int add_two(int x, int y) { // function definition
+  return(x + y);
+}
+
+int add_two(int x, int y);  // function declaration
+@
+
+It is essential that the compiler recognizes functions when they are called. This can be done in two ways: (a) including a function definition in the file containing the function call, or (b) including the function declaration in the file containing the function call and the function definition in another file that is linked during the linking stage (see Section~\ref{sec:c:compilation}). 
+
+
+In both option (a) and option (b) above, including the function declaration or definition in the file containing the function call is often done using the \texttt{\#include} preprocessor directive (see Section~\ref{c:preprocessor}). This way, the program does not need to contain a long list of function declarations or definitions that may reduce readability, but only a few \texttt{\#include} statements at the top of the file. 
+
+Option (a) is typically used in small programs containing a small number of files. Option (b) is preferred in programs containing a large number of files since it allows recompiling a smaller number of files whenever a small part of the program is modified (for example if the function definition is modified the code containing function calls does not need to be recompiled). 
+
+The typical way of using option (b) is demonstrated in the example below. The program contains three files: a file \texttt{factorial.cc} that contains the function definition of the function \texttt{my\_factorial}, a header file  \texttt{factorial.h} containing the function declaration (\texttt{int my\_factorial(int);}), and the main program file that appears below.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include "factorial.h"
+
+int main() {
+  cout << my_factorial(3) << endl;
+  return 0;
+}
+@
+
+Note that the main program files includes the header file that brings the function declaration into the main program. During the compilation stage the compiler recognizes the function but is not aware of its implementation. The linking stage occurs after the compilation of the individual files (see Section~\ref{sec:c:compilation}) and connects the compiled versions of the function definition to the compiled code segments that call the function.
+
+\subsection{Scope of Function Variables}
+
+All variables defined inside a function are local variables in the sense that they are not recognized outside of the function. This is consistent with the rule we saw previously that variables are in scope only within the curly braces block they are defined in. 
+
+For example, the code below has two \texttt{c} variables -- one defined in the \texttt{mult\_two} and one in \texttt{main}. The variable \texttt{c} in \texttt{mult\_two} is not recognized from \texttt{main}, and vice verse. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <string>
+using namespace std;
+
+// return a * b
+int mult_two(int a, int b) {
+  int c = a * b;
+  return(c);
+}
+
+int main() {
+  cout << mult_two(2,3) << endl; // prints 6
+  int b = 4, c = 5;
+  cout << mult_two(b, c) << endl; // prints 20
+  cout << c << endl;  // print value of local c (5)
+  return 0;
+}
+@
+
+\subsection{Pointer and Reference Parameters} \label{sec:c:functions:pointers}
+
+Another way for the function to communicate its results to the calling environment is to modify a memory location or an object that is passed to it as an argument. We focus below on modifying memory directly and postpone the issue of objects to Section~\ref{sec:c:oop}. Since the memory location that is modified by the function and read by the calling environment needs to be known to both the function and the calling environment it is convenient to have the calling environment pass a pointer to the function and have the function modify the content of the memory pointed to by that pointer. Below are some examples. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+// The function below writes n even numbers to memory.
+// The first argument is the memory location where the result 
+// will be written, and the second argument is the number of 
+// values that will be written.
+void write_seq(int *a, int n) {
+  for (int i = 0; i < n; ++i) {
+    a[i] = i*2;
+  }
+}
+
+// The function below negates n values that reside in 
+// memory (pointed to by the pointer argument a) 
+void negate_seq(int *a, int n) {
+  for (int i = 0; i < n; ++i) {
+    a[i] = -a[i];
+  }
+}
+
+int main() {
+  int A[10] = {};
+  write_seq(A, 10);  // assign even numbers to the array 
+  negate_seq(A, 10);  // negate values of A
+  for (const auto& a : A)
+    cout << a << " ";
+  cout <<  endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above results in the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 -2 -4 -6 -8 -10 -12 -14 -16 -18
+@
+
+Note that the memory that is written to by the function has to be allocated beforehand. In the code above this was done by the \texttt{int A[10]} statement. The memory allocation should be done by the calling environment rather than inside the function since variables defined inside the function are local and go out of scope after the function finishes execution. 
+
+An alternative way to accomplish the same task is to pass to the function parameters that are of type reference to a variable that is defined in the scope of the calling environment (see Section~\ref{sec:c:references} for more details on references). In this case, when the function assigns new values to the parameters, the variables in the calling environment that are referenced are changed as well. These changes persist after the function finishes its execution. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+// The function modifies variables in the calling environment by
+// receiving parameters of type reference, and then modifying the 
+// variables that are referred to.
+void foo2(int &a, int& b, int& c) {
+  a = 1;
+  b = 2;
+  c = 3;
+}
+
+int main() {
+  int a, b, c;
+  // print uninitialized variables
+  cout << a << " " << b << " " << c << endl; 
+  // modify the local a, b, c by passing references to them.
+  foo2(a, b, c); 
+  // print values of a, b, c 
+  cout << a << " " << b << " " << c << endl; 
+  return 0;
+}
+@
+
+Compiling and executing the code above results in the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 0 0
+## 1 2 3
+@
+
+\subsection{Recursion}
+
+It is possible to call one function from within another function. 
+
+<<engine="Rcpp",eval=FALSE>>=
+void bar() {
+  cout << "bar" << endl;
+}
+
+void foo3() {
+  cout << "foo3" << " ";
+  bar();
+}
+
+// enter foo3 and print "foo", enter bar and prints "bar"
+int main() {
+  foo3();  
+  return(0);
+}
+@
+
+In fact, it is possible for a function to call itself. This structure, known as recursion, is demonstrated in the examples below. In the first example, a function calls itself, which results in a never-ending sequence of self-calls (until the program crashes). 
+
+<<engine="Rcpp",eval=FALSE>>=
+// foo will keep calling itself, going into deeper and deeper
+// recursive calls 
+// (until the program crashes due to stack overflow) 
+
+void foo4() {
+  foo4();
+}
+
+int main() {
+  foo4();
+  return 0; // this statement will never be reached
+}
+@
+
+In the example below, the recursive function contains a stopping condition (\texttt{n==1}) that when met, the function stops making recursive calls. This allows the recursive structure to terminate and returns a useful computation to the calling environment (rather than continue indefinitely until the program crashes). The code below computes the factorial of a positive integer recursively. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+int factorial_recursion(int n) {
+  if (n == 1)
+    return(1);
+  return(n * factorial_recursion(n-1));
+}
+
+int main() {
+  cout << factorial_recursion(3) << endl; // prints 3*2*1=6
+  return 0;
+}
+@
+
+The code below is equivalent to the code above, except that we add statements that print messages showing when each function is called and with what argument value, and when each function returns and what value it returns. These messages clarify when each function is called and when each function returns to its calling environment. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+int factorial_recursion(int n) {
+  cout << "entering factorial_recursion(" << n << ")" << endl;
+  if (n == 1) {
+    cout << "leaving factorial_recursion(" << 1 << ")" << 
+      " with return value " << 1 << endl;
+    return(1);
+  }
+  int res = n * factorial_recursion(n-1);
+  cout << "leaving my_factorial(" << n << ")" << 
+    " with return value " << res << endl;
+  return(res);
+}
+
+int main() {
+  cout << factorial_recursion(3) << endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above gives the following output. 
+
+<<engine="Rcpp",eval=FALSE>>=
+## entering my_factorial(3)
+## entering my_factorial(2)
+## entering my_factorial(1)
+## leaving my_factorial(1) with return value 1
+## leaving my_factorial(2) with return value 2
+## leaving my_factorial(3) with return value 6
+## 6
+@
+
+Above, the function \texttt{factorial\_recursion(3)} is called initially, which immediately calls \texttt{factorial\_recursion(2)}, which in turn immediately calls \texttt{factorial\_recursion(1)}. At that point, the stopping condition is met and \texttt{factorial\_recursion(1)} returns to its calling environment,\newline \noindent  \texttt{factorial\_recursion(2)}, with a value of 1. Then, \texttt{factorial\_recursion(2)} returns to its calling environment, \texttt{factorial\_recursion(3)}, with a value of 2.  Then,  \texttt{factorial\_recursion(3)} returns to its calling environment, \texttt{main}, with a value of 6. That value is then printed by the main function.
+
+\subsection{Passing Arguments to Main}
+
+C++ allows passing arguments to \texttt{main} that may alter the behavior of the program. Since \texttt{main} represents the executable program and is called from the operating system, the parameters needs to be passed through the terminal prompt as follows.
+
+<<engine="Rcpp",eval=FALSE>>=
+# running the program ./my_prog from the Linux terminal 
+# calls the appropriate main function with parameters a, 1, b, 2
+./my_prog a 1 b 2
+@
+
+To access the parameters passed to \texttt{main} we consider \texttt{main} as a function having the function declaration \texttt{int main(int argc, char **argv)}, where \texttt{int argc} represents the number of arguments and \texttt{char **argv} represents an array of character arrays containing the arguments themselves (first array element \texttt{argv[0]} represents the name of the executable file).
+
+For example, the program below prints the value of \texttt{argc}, and then prints the values of \texttt{argv[i]} for values of \texttt{i} ranging from 0 to \texttt{argc-1}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+int main(int argc, char **argv) {
+  cout << "argc is: " << argc << endl;
+  for (int i = 0; i < argc; ++i)
+    cout << "argv[" << i << "] is: " << argv[i] << endl;
+  return(0);
+}
+@
+
+Below is an example of calling the appropriate program (we assume that the code above is compiled into an executable file \texttt{my\_prog}) with four parameters \texttt{a}, \texttt{1}, \texttt{b}, \texttt{2}.
+
+<<engine="Rcpp",eval=FALSE>>=
+./my_prog a 1 b 2
+
+## argc is: 5
+## argv[0] is: ./my_prog
+## argv[1] is: a
+## argv[2] is: 1
+## argv[3] is: b
+## argv[4] is: 2
+@
+
+\subsection{Overloading Functions}
+
+C++ allows multiple functions with the same name but with different declarations. When the function is called, the compiler attempts to determine which function is called based on the list of arguments in the function call. 
+
+For example, the code below contains three  \texttt{print\_arguments} function with different parameter lists. The \texttt{main} function contains three calls to \texttt{print\_arguments}, each being matched to a different function definition. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+void print_arguments(int a) {
+  cout << "One int argument passed: " << a << endl;
+}
+
+void print_arguments(double a) {
+  cout << "One double argument passed: " << a << endl;
+}
+
+void print_arguments() {
+  cout << "No argument passed" << endl;
+}
+
+int main() {
+  print_arguments();  // match the signature print_arguments()
+  print_arguments(1);  // match the signaure print_arguments(int)
+  print_arguments(1.2);  // match the signature print_arguments(double)
+  return 0;
+}
+@
+
+Compiling and executing the program above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+./print_arguments
+
+## No argument passed
+## One int argument passed: 1
+## One double argument passed: 1.2
+@
+
+%--------------------------------------------------------
+\section{Object Oriented Programming} \label{sec:c:oop}
+
+Object oriented programming (OOP) is a way to structure programs around objects, featuring three principles: encapsulation, inheritance, and polymorphism. Programs written with the OOP paradigm tend to be simpler; they are easier read and modify, and are less likely to have bugs. Recent large scale software development focuses primarily on the OOP paradigm.
+
+We start below by describing structs and classes and then describe the three components of OOP:  encapsulation, inheritance, and polymorphism.
+
+\subsection{Structs}
+
+A struct is a collection of variable types associated with names. For example, a struct named \texttt{person} may have the named variable types \texttt{int age}, \texttt{double height}, and \texttt{double weight}. In the same way that a variable is an instantiation of a variable type, an object is an instantiation of a struct. For example, \texttt{Jane\_Doe} may be an instantiation of the \texttt{person} struct described above. There may be multiple instantiations of a single struct but every instantiation must have a single struct it corresponds to.
+
+When an object corresponding to a struct is instantiated, variables corresponding to the variable types are instantiated as well. These variables are called the fields or member variables of the instantiated object.
+
+Structs are defined using the keyword \texttt{struct}, and the collection of fields composing the struct are listed inside curly braces followed by a semi-colon. For example, below is a definition of a struct containing two floating point numbers.
+
+<<engine="Rcpp",eval=FALSE>>=
+// define a new struct type containing two floats.
+struct point {
+  double x;
+  double y;
+};
+@
+
+After a struct is defined (as in the example above), we can instantiate a corresponding object by using the struct name as a variable type. 
+The period operator is used to refer to the fields belonging to a specific struct object, for example \texttt{p1.x} refers to the field \texttt{x} of the struct object \texttt{p1}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+point p1; // instantiation of object p1
+p1.x = 3;
+p1.y = 0;
+@
+
+There are several ways in which functions can accept objects as arguments.
+
+\begin{description}
+\item[Call by Value.] The object from the calling environment is copied into a new object that is local to the function. Any modification inside the function to the object will affect only the local copy and not the object that resides in the calling environment. 
+
+Call by value occurs when the function declaration contains the struct type in the argument list. For example the following function receives two objects by value.
+<<engine="Rcpp",eval=FALSE>>=
+void foo5(point p1, point p2)
+@
+
+\item[Call by Reference.] The function gains access to a reference to an object defined in the calling environment. Changes the function makes to the object persist after the function finishes its execution. Since there is no need to create a local object and copy the object to the local object, calling by reference is faster and more space efficient than calling by value.
+
+Call by reference occurs when the struct name in the function definition and declaration is followed by a \texttt{\&} symbol. For example the following function receives the first object by reference and the second object by value.
+<<engine="Rcpp",eval=FALSE>>=
+void foo6(point& p1, point p2)
+@
+
+\item[Call by Const Reference.] The function gains access to a const reference to an object defined in the calling environment. Since the reference is \texttt{const}, the function is not allowed to modify the object. Since there is no need to create a local object and copy the object to the local object, calling by const reference is faster and more space efficient than calling by value.
+
+Call by const reference occurs when the struct name in the function declaration is preceded by \texttt{const} and is followed by \texttt{\&}. For example the following function receives the first object by const reference and the second object by reference.
+<<engine="Rcpp",eval=FALSE>>=
+void foo7(const point& p1, point& p2)
+@
+
+\item[Call by Address.] The function gains access to a pointer to an object. Any changes made to the pointed object persist after the function finishes its execution. Since there is no need to create a local object and copy the object to the local object, calling by address is faster and more space efficient than calling by value.
+
+Call by address occurs when the function signature contains the struct type followed by the \texttt{*} symbol. For example the following function receives the first object by address and the second object by value.
+<<engine="Rcpp",eval=FALSE>>=
+void foo8(point* p1, point p2)
+@
+\end{description}
+
+Since call by value is wasteful and potentially slow (it creates a local copy of the object and copies the object to the local copy), it should be avoided except in cases involving small objects. Instead, it is recommended to use call by reference (if the function is supposed to change the value of the object), or call by const reference (if the function is not supposed to change the value of the object). The following example demonstrates passing objects by references.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+struct point {
+  double x;
+  double y;
+};
+
+// pass by reference - the function is modifying p 
+void scale_point(point& p, double sc) {
+  p.x = p.x * sc; 
+  p.y = p.y * sc; 
+}
+
+// pass by const reference - the function is not modifying p
+void print_point(string prefix, const point& p) {
+  cout << prefix << "(" << p.x << "," << p.y << ") "; 
+}
+
+// pass by const reference - the function is not modifying p1, p2
+point subtract_points(const point& p1, const point& p2) {
+  point diff;
+  diff.x = p1.x - p2.x;
+  diff.y = p1.y - p2.y;
+  return(diff);
+}
+
+int main() {
+  point p1, p2;
+  p1.x = 1; 
+  p1.y = 2;
+  p2.x = 3;
+  p2.y = 3;
+  print_point("first point: ", p1);
+  print_point("second point: ", p2);
+  print_point(subtract_points(p1, p2));
+  // scale second point by a factor of 2
+  cout << endl << "scaling the second point by a factor of 2" << endl;
+  scale_point(p2, 2);
+  print_point("first point: ", p1);
+  print_point("second point: ", p2);
+  print_point(subtract_points(p1, p2));
+  return 0;
+}
+@
+
+The program above prints the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## p1: (1,2) p2: (3,3) p1-p2: (-2,-1)
+## scaling the second point by a factor of 2
+## p1: (1,2) p2: (6,6) p1-p2: (-5,-4)
+@
+
+Structs can be nested, for example the following code defines a new struct \texttt{vector} that contains two \texttt{point} structs. The \texttt{length} function computes the length or Euclidean norm of the function. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <cmath>
+using namespace std;
+
+struct point {
+  double x;
+  double y;
+};
+
+struct vector {
+  point start;
+  point end;
+};
+
+// pass by const reference - the function is not modifying p1, p2
+point subtract_points(const point& p1, const point& p2) {
+  point diff;
+  diff.x = p1.x - p2.x;
+  diff.y = p1.y - p2.y;
+  return(diff);
+}
+
+double length(const vector& v) {
+  point diff = subtract_points(v.start, v.end);
+  return(sqrt(pow(diff.x, 2) + pow(diff.y, 2)));
+}
+
+int main() {
+  vector v;
+  v.start.x = 1;
+  v.start.y = 0;
+  v.end.x = 2;
+  v.end.y = 1;
+  cout << "length of the vector is: " << length(v) << endl;	
+}
+@
+
+Compiling and running the code above gives the following output (the length of the vector is $\sqrt{1^2+1^2}=\sqrt{2}\approx 1.41421$).
+
+<<engine="Rcpp",eval=FALSE>>=
+## length of the vector is: 1.41421
+@
+
+The \texttt{->} operator refers to fields within a struct pointed to by a pointer. For example if \texttt{pp} is a pointer to a \texttt{point} object, \texttt{pp->x} is equivalent to \texttt{(*pp).x}.
+
+<<engine="Rcpp",eval=FALSE>>=
+int main() {
+  // create an array of two points
+  point p_arr[2];
+  // initialize the array to (0,1) and (2,3)
+  p_arr[0].x = 0;
+  p_arr[0].y = 1;
+  p_arr[1].x = 2;
+  p_arr[1].y = 3;
+  // p_arr is a pointer that refers to the start of the array
+  // print p_arr[0] using -> syntax
+  cout << p_arr->x << " " << p_arr->y << endl; 
+  // print p_arr[1] using . syntax
+  cout << p_arr[1].x << " " << p_arr[1].y << endl;
+}
+@
+
+Compiling and executing the above program gives the following output. 
+<<engine="Rcpp",eval=FALSE>>=
+## 0 1
+## 2 3
+@
+
+\subsection{Classes} \label{sec:c:classes}
+
+Classes are similar to structs, but differ in that they may also include functions, which are called member functions or methods. After an object corresponding a specific class is instantiated, its methods can be called using the period operator \newline
+\texttt{object\_name.method\_name}, or using the \texttt{->} operator if we have a pointer to an object \texttt{pointer\_name->method\_name}. Inside a method, the fields can be accessed by referring to their names or by using the \texttt{this->field\_name} construct (inside a method, \texttt{this} is a pointer that refers to the object that is in context). 
+
+Fields and methods that follow a \texttt{public:} statement are accessible to code that is part of the class definition or code that is not part of the class definition. Fields and methods that follow a \texttt{private:} statement are only accessible to code that is part of the class definition.
+
+We can specify that a specific method does not modify the class fields by including the \texttt{const} keyword in the function declaration after the function argument list. Doing so enables calling the method of an object that is defined as \texttt{const}. 
+
+Methods can also be implemented outside of the class, as long as their declaration appears in the class and the function definition indicates their class membership of the method using the \texttt{::} operator. For example, the code below implements a class representing a point in a two dimensional space. The method \texttt{reflect} is implemented outside the class.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+class point {
+private:
+  // fields are accessible only to methods belonging to point
+  double x, y;  
+public:
+  // set value of x
+  void set_x(double nx) {
+    x = nx;	
+  }
+  // set value of y
+  void set_y(double ny) {
+   y = ny;	
+  }
+  // get value of x, const implies that the method does not 
+  // modify the object
+  double get_x() const { 
+    return(x);
+  }
+  // get value of y, const implies that the method does not 
+  // modify the object
+  double get_y() const {
+    return(y);	
+  }
+  // negate x and y (method implemented outside class body)
+  void reflect();
+};
+
+void point::reflect() {
+  x = -x;  // alternatively, this->x = - this->x
+  y = -y;	 // alternatively, this->y = - this->y
+}
+
+int main() {
+  point p;
+  p.set_x(1);
+  p.set_y(2);
+  cout << "(" << p.get_x() << "," << p.get_y() << ")" << endl;
+  p.reflect();
+  cout << "(" << p.get_x() << "," << p.get_y() << ")" << endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## (1,2)
+## (-1,-2)
+@
+
+Once we have a \texttt{point} object in \texttt{main}, we can access its methods \texttt{set\_x}, \texttt{set\_y}, \texttt{get\_x}, \texttt{get\_y}, and \texttt{reflect} since they follow a \texttt{public:} statement. Accessing the fields or methods in \texttt{main} that are marked as private yields a compilation error (for example including the statement \texttt{p.x = 3} in \texttt{main()}.)
+
+\subsubsection{The Constructor and the Destructor}
+
+When a new object is instantiated (for example the statement \texttt{point p;} in the code above) C++ creates a new object whose fields are initialized to default values. The constructor method offers a way to initialize new objects in a different way, specified by the programmer. One benefit of using a constructor method is that it can accept arguments that are used to initialize the fields. The constructor method has the same name as the class and it does not have any return type. 
+
+Using the function overloading concept, we can define multiple constructors, each accepting a different argument list. The appropriate constructor is executed by matching the argument list in the method call with the various overloaded constructor methods. The default constructor that initializes all fields to default values is only called if there are no explicit definitions of a constructor function.
+
+For example, we can define the following two constructors for the \texttt{point} class above. 
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ...
+  // empty constructor, called by the statement point p;
+  point() {} 
+  // constructor accepting two arguments, called by a 
+  // statement such as point p(1,2);
+  point (double nx, double ny) {
+    x = nx;
+    y = ny;
+  }
+  ...
+};
+@
+
+Compiling and executing the \texttt{main} function below, we get the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+int main() {
+  point p1;  // empty constructor called
+  point p2(2,-2);  // constructor with two argument is called
+  cout << "(" << p2.get_x() << "," << p2.get_y() << ")" << endl;
+  return 0;
+}
+@
+
+<<engine="Rcpp",eval=FALSE>>=
+## (2,-2)
+@
+
+When defining a constructor, we can also initialize the fields following using a colon operator after the argument list. For example, the constructor of the \texttt{point} class above can also be implemented as follows.
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ...
+  // constructor accepting two arguments, called by a 
+  // statement such as point p(1,2);
+  point::point (int nx, int ny) : x(nx), y(ny) {}
+  ...
+};
+@
+
+The destructor method is called whenever an object is destroyed, for example when we exit a curly braces block in which an object is defined.  The name of the destructor method is the $\sim$ symbol followed by the class name. Including it is optional, and it is particularly important when the object has dynamically allocated memory (see Section~\ref{sec:c:DMA}). For example, an empty destructor for the \texttt{point} class is listed below.
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ... 
+  ~point() {} // empty destructor, does nothing 
+  ...
+};
+@
+
+\subsubsection{The Copy Constructor}
+
+The copy constructor method allows the programmer to define a new object and initialize it using the values of another object. It is similar to the constructor, but it accepts as an argument a const reference to the object that is constructs. 
+
+For example, the code below defines a copy constructor for the point class and a main function that defines a new object \texttt{p2} based on an existing object \texttt{p1} using the copy constructor.
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ... 
+  // copy constructor
+  point (const point& np) {
+    x = np.x;
+    y = np.y;
+  }
+  ...
+};
+
+int main() {
+  point p1(1,2); // new object created by calling constructor	
+  point p2(p1);  // new object created by calling copy constructor
+  return 0;
+}
+@
+
+If a copy constructor is not explicitly defined, the compiler creates a default copy constructor where the fields are copied from the existing object to the new object. 
+
+\subsubsection{Operator Overloading}
+
+C++ offers a way to define the way operators such as \texttt{=}, \texttt{+}, and \texttt{-}, apply to objects. The operator is implemented as a function, whose definition depends on whether the operator is binary or unary and what object type is returned by the operator. 
+
+We demonstrate operator overloading by implementing two operators for the \texttt{point} class: the binary addition \texttt{+} operator and the unary streaming output operator \texttt{<<}.
+
+The operator \texttt{+} is a function that accepts one object by const reference. The other object is the object that is in context when the function is called (represented by the \texttt{this} pointer). For example, the expression \texttt{x+y} reduces to the object \texttt{x} calling the operator function \texttt{+} with an argument that is a const reference to \texttt{y}. The operator returns a new object representing the result of the addition operator. 
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ... 
+  // overload addition operator (+)
+  point operator+ (const point& np) const {
+    point res;
+    res.x = this->x + np.x;
+    res.y = this->y + np.y;
+    return res;
+  }
+  ...
+};
+@
+
+Above, the \texttt{const} statement after the argument list indicates that the operator does not modify the object that calls the operator function (the first argument of the addition).
+
+The case of the streaming output operator \texttt{<<} is different in that the operator overloading function is not a method of the  \texttt{point} class. As a result the operator code cannot typically access private fields and must use the \texttt{get\_x} and \texttt{get\_y} public methods instead (the case of a friend function is an exception that is described in the next section).
+
+<<engine="Rcpp",eval=FALSE>>=
+ostream& operator<<(ostream& os, const point& p) {
+  os << "(" << p.get_x() << "," << p.get_y() << ") ";
+  return os;
+}
+
+int main() {
+  point p1(1,2), p2(2,3);
+  point p3 = p1 + p2;  // call overloaded + operator
+  // call overloaded << operator three times
+  cout << p1 << p2 << p3 << endl;  
+  return 0;
+}
+@
+
+Compiling and executing the code above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## (1,2) (2,3) (3,5)
+@
+
+The assignment operator \texttt{=} is special in the sense that if it is not defined explicitly by the programmer, a default assignment operator is created by the compiler that copies the fields from the source object to the destination object.
+
+\subsubsection{Friend Functions}
+
+Specifying a non-member function as a friend of a class allows the function to access fields marked as private. 
+
+For example, the output stream operator overloading function above can be listed as a friend of the \texttt{point} class, in which case it can access the private fields directly rather than use \texttt{get\_x} and \texttt{get\_y} methods. An example appears below. 
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ...
+  // mark the non-member function overloading << as a friend
+  friend ostream& operator<<(ostream& os, const point& p);	
+  ...	
+};
+
+ostream& operator<<(ostream& os, const point& p) {
+  // access private fields since << is a friend of point
+  os << "(" << p.x << ',' << p.y << ") ";  
+  return os;
+}
+@
+
+Classes have more properties than described above. We continue to explore their properties below as we discuss the three main aspects of object oriented programming: encapsulation, inheritance, and polymorphism.
+
+\subsection{Encapsulation} \label{sec:encap}
+
+The principle of encapsulation states that when there are multiple software components interacting with each other, the code (including variables, functions, and objects) of one software component should not be generally accessible to the code of another software components. The interaction between software components should be limited to a small set of interface methods. A few benefits of encapsulation appear below.
+
+\begin{itemize}
+\item If the interface is kept constant, the implementation of one software component may change without affecting the implementations of the other software components. 
+\item One software component cannot inadvertently corrupt variables that another component relies on (the interface methods can implement a mechanism that ensures fields are set to appropriate values and only in appropriate case). 
+\item Debugging is easier since bugs can often be localized to specific software components.
+\item Software development can be conveniently parallelized across multiple development teams, with the different teams agreeing on the interface and then each team working independently on the implementation of their software components.
+\end{itemize}
+
+To illustrate how the encapsulation concept applies to classes, consider a situation where we want to modify the type of the fields \texttt{x}, \texttt{y} of the \texttt{point} class from \texttt{double} to \texttt{float}. One reason to do so is to save memory and support very long arrays of point objects. Since \texttt{x} and \texttt{y} are private fields and are accessible by external code only through public methods, we can modify the variable types without affecting the codes that uses point objects as long as we keep the interface represented by the public methods constant.
+
+\subsection{Inheritance} \label{sec:c:inheritance}
+
+Inheritance enables the sharing of code between two related classes. This applies in situations where there is a simple class, called the base class, and a more complex version of it, called the derived class. The base class is implemented in full while the derived class only implements the added functionality it offers beyond the base class. In some cases, the term superclass is used instead of base class and the term subclass is used instead of derived class. 
+
+The fields and methods of the base class are included in the derived class, but in some cases the base class methods are overloaded in the derived class in order to add functionality related to the added complexity of the derived class.
+
+We focus in this section on public inheritance in C++, which states that public members of the base class become public members of the derived class and private members of the base class are inaccessible from the derived class.  Public inheritance is denoted by following the derived class name with \texttt{: public base\_class\_name}.
+
+We demonstrate inheritance by considering the \texttt{point} class as a base class and defining a derived class called \texttt{named\_point}, which extends \texttt{point} by adding a string field corresponding to the name of the point.
+
+<<engine="Rcpp",eval=FALSE>>=
+class named_point : public point {
+private:
+  string name;
+public:
+  // empty constructor calls point constructor
+  named_point() : point() {} 
+  // constructor calls point constructor and then initializes name
+  named_point(double nx, double ny, string s) : point(nx, ny) {
+    name = s;	
+  }
+  string get_name() {
+    return name;
+  }	
+  void set_name(string s) {
+    name = s;	
+  }
+};
+
+int main() {
+  named_point np(1, 2, "first point");  // create an object
+  np.set_name("FIRST POINT");  // modify the name
+  np.set_x(2);  // modify x value (call to base class method)
+  cout << np.get_name() << ": (" << np.get_x() << "," << 
+    np.get_y() << ")"<< endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## FIRST POINT: (2,2)
+@
+
+We can refer explicitly to a method associated with a specific class using the \texttt{::} operator. For example, if \texttt{A} is the base class and \texttt{B} is a derived class, and both classes implement the method \texttt{foo()}, \texttt{A::foo()} refers to the \texttt{foo()} implementation in class \texttt{A} and \texttt{B::foo()} refers to the \texttt{foo()} implementation in class \texttt{B}.
+
+\subsection{Polymorphism} \label{sec:c:polymorphism}
+
+Pointers of the type \texttt{A*} can refer to objects of class \texttt{A} or objects of type \texttt{B}, if \texttt{B} is a derived class of \texttt{A}. This property is called polymorphism.  
+
+We illustrate the usefulness of polymorphism with the example below. Suppose we have a base class \texttt{point} and a derived class \texttt{named\_point}, as in the example above. If we want to store and process a large collection of points, one solution is to create an array of \texttt{point} objects and an array of \texttt{named\_point} objects. But a more convenient solution is to create a single array of type \texttt{point*} and have some pointers in the array refer to \texttt{point} objects and others refer to \texttt{named\_point} objects. 
+
+Continuing the example above, we assume that both \texttt{point} and \texttt{named\_point} implement the method \texttt{print()} differently (printing a \texttt{named\_point} requires printing the name of the point, something which is inapplicable to \texttt{point} objects). The following question arises: if we traverse the array of pointers and call \texttt{print} for each element, which method will be called: \texttt{point::print()} or \texttt{named\_point::print()}? There are two possibilities: (a) \texttt{point::print()} will be called each time since the array holds \texttt{point*} pointers, and (b) either \texttt{point::print()} or \texttt{named\_point::print()} will be called, depending on which object is pointed to. Case (a) is called static binding and case (b) is called dynamic binding. The static label refers to the fact that the function that is called is determined at compilation time. The dynamic label refers to the fact that the function that is called is determine at run time.
+
+In other words, if \texttt{pa} is a pointer of type \texttt{A*}, static binding implies that \texttt{pa->foo()} will execute \texttt{A::foo()} (if it is defined) regardless of whether \texttt{pa} points to an object of type \texttt{A} or to an object of class \texttt{B} where \texttt{B} is a subclass of \texttt{A}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ...
+  void print() {  // point::print method defined in base class
+    cout << "(" << x << "," << y << ") " << endl;	
+  }
+  ...
+};
+
+class named_point : public point {
+  ...
+  // named_point::print method defined in derived class
+  void print() {  
+    cout << name << " "; 
+    point::print();	
+  }
+  ...
+};
+
+int main() {
+  point p(2,3);
+  named_point np(1, 2, "first point");
+  p.print();  // point::print is called
+  np.print();  // named_point::print is called 
+  return 0;	
+}
+@
+
+The code above prints the following output. The first row represents the output of \texttt{point::print()} and the second row represents the output of the method of the derived class \texttt{named\_point:print()}.
+
+<<engine="Rcpp",eval=FALSE>>=
+## (2,3)
+## first point (1,2)
+@
+
+The following code demonstrates static binding, which is the default in C++. Note that even though \texttt{pp} points to an object of class \texttt{named\_point}, the method call \texttt{pp->print()} calls \texttt{point::print}.
+
+<<engine="Rcpp",eval=FALSE>>=
+int main() {
+  point p(2,3), *pp;
+  named_point np(1, 2, "first point");
+  pp = &np;
+  pp->print(); // static binding calls point::print() 
+  return 0;	
+}
+@
+
+Compiling and executing the program above gives the following output
+
+<<engine="Rcpp",eval=FALSE>>=
+## (1,2)
+@
+
+In the case of dynamic binding, the method corresponding to the pointed object is chosen at run-time and executed. To enable dynamic binding, the corresponding methods need to be defined as virtual.
+
+Below, we modify the code so that dynamic binding is used. The only modification needed is to add the keyword \texttt{virtual} before the definitions of the \texttt{print} methods. 
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ...
+  // point::print method defined in base class
+  virtual void print() {  
+    cout << "(" << x << "," << y << ") " << endl;	
+  }
+  ...
+};
+
+class named_point : public point {
+  ...
+  // named_point::print method defined in derived class
+  virtual void print() {  
+    cout << name << " "; 
+    point::print();	
+  }
+  ...
+};
+
+int main() {
+  point p(2,3), *pp;
+  named_point np(1, 2, "first point");
+  pp = &np;
+  pp->print(); // dynamic binding calls named_point::point
+  return 0;	
+}
+@
+
+Compiling and executing the code above gives the following output. 
+
+<<engine="Rcpp",eval=FALSE>>=
+## first point (1,2)
+@
+
+\subsubsection{Pure Virtual Functions and Abstract Classes}
+
+Pure virtual methods are virtual methods, defined in a base class, that have no implementation in the base class. They exist simply as a place-holder for defining overloaded methods in derived classes. To define a method as pure virtual simply add a \texttt{= 0} following the argument list in the method declaration. 
+
+For example, the method \texttt{analyze} below in the class \texttt{point} is a pure virtual method. 
+
+<<engine="Rcpp",eval=FALSE>>=
+class point {
+  ...
+  virtual analyze() = 0;  // pure virtual method
+  ...
+};
+@
+
+Since no implementation is specified for a pure virtual method, it is impossible to instantiate objects of the corresponding class. For this reason, classes with one or more pure virtual functions are called abstract classes. 
+
+\subsection{Static Variables and Functions}
+
+Static fields are shared across all instantiated objects. When one object modifies that static variable, the change is reflects for all current and future objects of the same class. Static variables are denoted by preceding the variable type with  \texttt{static}. 
+
+Static methods are prohibited from accessing non-static fields. Calling a static method from any instantiated object of the same class produces the same behavior. In fact, it is possible to call a static method or refer to a static field without referring to any specific object, using the syntax \texttt{class\_name::static\_var\_name} (this allows reference to static fields or static methods even if no object of the corresponding class exists).
+
+The example below adds a static field \text{num\_objects} to the \texttt{point} class. The field is initializes to 0  and is incremented whenever the empty constructor is called. Thus, \texttt{num\_objects} keeps the number of points that were constructed using the empty constructor.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+class point {
+private:
+  // fields are accessible only to methods belonging to point
+  double x, y;  
+  static int num_objects;
+public:
+  point() {
+    // increment counter when a new object is created
+    ++num_objects; 
+  }
+  static int get_num_points() {
+    return(num_objects);
+  }
+};
+
+// initialize the static field num_objects to 0
+int point::num_objects = 0; 
+
+int main() {
+  point p1, p2, p3;
+  cout << "number of point objects: " 
+       << point::get_num_points() << endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## number of point objects: 3
+@
+
+Static variables can also be defined outside of a class definition. This usage implies that the variables are kept in memory even if they go out of scope. For example, the following code records the number of times a function has been called. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int foo9() {
+  // initialization occurs only once when program is loaded
+  static int counter = 0;
+  ++counter;
+  return counter;
+}
+
+int main() {
+  foo9();
+  foo9(); 
+  cout << "number of times foo is called: "<< foo() << endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## number of times foo is called: 3
+@
+
+\section{Dynamic Memory and Smart Pointers} \label{sec:c:DMA}
+
+\subsection{Dynamic Memory Allocation}
+
+Defining a variable (or an array of variables) reserves a portion of memory whose size is known at compilation time. This mechanism, which includes all of the examples we have seen thus far, is known as static memory allocation. 
+
+Dynamic memory allocation is a mechanism for allocating memory for an object or an array whose size is not known in compilation time.  Memory that is dynamically allocated exists until it is explicitly freed by the programmer. 
+
+The C++ \texttt{new} statement dynamically allocates memory and the \texttt{delete} statement frees the memory. If memory is allocated for an object, the \texttt{new} statement calls the appropriate constructor function and the \texttt{delete} statement calls the appropriate destructor function. C++ also offers the older C statements  \texttt{calloc} and \texttt{malloc} for allocating memory and \texttt{free} for freeing memory. We do not describe below these statements as \texttt{new} and \texttt{delete} supersede \texttt{calloc}, \texttt{malloc}, and \texttt{free}.
+
+In our first example below, we allocate memory dynamically for a double variable, and define a pointer that points to that memory. We later free that memory with the \texttt{delete} statement.
+
+<<engine="Rcpp",eval=FALSE>>=
+// pd points to a dynamically allocated double variable
+int *pd = new double;
+// free the allocated memory
+delete pd;
+@
+
+In the example below we allocate memory for an object of class \texttt{point}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int *pp1 = new point; // call empty constructor of point
+int *pp2 = new point(1,2); // call non-empty constructor of point
+// free the allocated memory
+delete pp1;
+delete pp2;
+@
+
+In the example below we allocate memory for an array of objects. 
+
+<<engine="Rcpp",eval=FALSE>>=
+int n = 2;
+// allocate memory for an array of n objects of type point
+int *pp = new point[n]; 
+pp[0].set_x(2);
+pp[0].set_y(1);
+pp[1] = pp[0] + pp[0]; // call overloaded point + operator
+delete [] pp; // free up a dynamically allocated array
+@
+
+Note that the size of the allocated array is marked by a non-const variable, and thus may not known at compilation time. For this reason, a static allocation in this case would fail. 
+
+\subsection{Smart Pointers} \label{sec:c:smartPointers}
+
+Dynamic memory allocation requires the programmer to free memory when it is no longer used, and to not free memory that is still needed later on in the program. The 2011 C++ standard includes a mechanism known as smart pointers that relieves the programmer from some of these responsibilities. 
+
+Smart pointers are similar to standard pointers except that they automatically free the appropriate memory when it is no longer used. There are two types of smart pointers in C++: \texttt{shared\_ptr}, which allows multiple pointers to point to the same memory, and \texttt{unique\_ptr}, which allows only a single pointer to point to the allocated memory. To use smart pointers, the header file \texttt{memory} should be included in the program.
+
+The smart pointers \texttt{shared\_ptr} and \texttt{unique\_ptr} are actually templates. We therefore qualify the pointer type with angle brackets containing the type of variables that they point to. See   Section~\ref{sec:c:templates} for more information on templates.
+
+<<engine="Rcpp",eval=FALSE>>=
+// create smart pointers to a double variable holding value 4.2
+// using the make_shared function
+shared_ptr<double> pd1 = make_shared<double>(4.2);  
+// alternative definition without the make_shared function
+shared_ptr<double> pd2(new double(4.2));  
+// pd2 is reassigned to a new memory content, older memory content
+// no longer pointed to and is therefore freed up automatically
+pd2 = make_shared<double>(8.4);
+// ok as several shared_ptr may point to the same memory
+shared_ptr<double> pd3 = pd2; 
+@
+
+The smart pointer \texttt{unique\_ptr} differs from \texttt{shared\_ptr} in that \texttt{unique\_ptr} ``owns'' the memory it points to, so that no other smart pointer can refer to that memory. One exception to that rule is that  a new \texttt{unique\_ptr} smart pointer may be assigned to the memory pointed to by a \texttt{unique\_ptr} that is being destroyed. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <memory>
+using namespace std;
+
+// function that returns unique smart pointer to int
+unique_ptr<int> foo10() {
+  return unique_ptr<int>(new int(4));
+}
+
+int main() {
+  unique_ptr<int> pi1(new int(3));
+  // error: two unique_ptr pointers pointing to the same memory
+  unique_ptr<int> pi2 = pi1; 
+  // ok: new unique_ptr takes over as old unique_ptr is destroyed
+  unique_ptr<int> pi3 = foo10(); 	
+  return 0;
+}
+@
+
+The smart pointer \texttt{unique\_ptr} can also point to arrays of objects (\texttt{shared\_ptr} cannot do it by default). In that case the variable type in the angle brackets needs to be followed by square brackets to indicate that the smart pointer points to an array.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <memory>
+using namespace std;
+
+int main() {
+  int n = 10;
+  // smart pointer to an array of int variables
+  unique_ptr<int[]> pia(new int[n]);
+  for (int i = 0; i != 10; ++i) 
+    pia[i] = i;
+  for (int i = 0; i != 10; ++i) 
+	    cout << pia[i] << " ";
+  cout << endl;
+  return 0;
+}
+@
+
+Compiling and executing the code above results in the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 1 2 3 4 5 6 7 8 9
+@
+
+%--------------------------------------------------------
+\section{Templates} \label{sec:c:templates}
+
+In some cases a sequence of operations is repeated on variables of different types. For example, a function that sums up the elements of an array needs to be implemented separately for each variable type: \texttt{int}, \texttt{long}, \texttt{double}, etc. Templates allows writing code that applies generically without specifying particular variable or object types. The code that calls the template function or that uses the template class specifies the variable type that the generic code will run on. 
+
+We start below by describing template functions and then proceed to describe template classes.
+
+\subsection{Template Functions}
+
+Template functions implement generic code on undetermined variable types. When a template function is defined it is preceded by \texttt{template <class T>}, where \texttt{T} is a place-holder for a generic type that will be specified by the calling environment. The string \texttt{T} can be replaced with any other string, but is by convention single upper case letter. When the function is called, the place-holder type is converted to a specific variable type or class by appending the function name with the appropriate type inside angle brackets. Template functions can accept more than a single place-holder, in which case the calling environment needs to specify more than a single variable type or class.
+
+For example, the template function below returns the maximum value among two arguments of the same (unspecified) type. It is required, however, that whenever the variable type is specified, it has an implementation of the comparison operator \texttt{<} (this is the case for all numeric variable types such as \texttt{int}, \texttt{double}, etc.). 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+#include <memory>
+using namespace std;
+
+template <class T> 
+T get_max(T a, T b) {
+  if (a > b) 
+    return a;
+  return b;
+}
+
+int main() {
+  int ia = 1, ib = 2;
+  double da = 9.1, db = 2.5;
+  // call the template function, replacing T with int
+  cout << get_max<int>(ia, ib) << endl;
+  // call the template function, replacing T with double
+  cout << get_max<double>(da, db) << endl;  
+  return 0;	
+}
+@
+
+Compiling and executing the program above results in the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 2
+## 9.1
+@
+
+Note that the template function above returns a variable or object of type \texttt{T}, the unspecified type that characterizes its two arguments. Without the mechanism of template functions, the function above would have to be implemented separately for each variable type. 
+
+In case where two generic types are needed, the template function definition is preceded by \texttt{template <class T1, class T2>} (as before \texttt{T1} and \texttt{T2} can be replaced with other strings). Additional generic types can be added as needed.
+
+The following example shows a template function that returns the maximum element among two variables of potentially different types. It is required that the comparison operator is supported for the two variable types. Note that the \texttt{get\_max} function below returns a variable of type \texttt{T1} (regardless of whether the first or second argument are greater, the maximum is converted to type \texttt{T1} before it is returned).
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+template <class T1, class T2> 
+T1 get_max(T1 a, T2 b) {
+  if (a > b) 
+    return a;
+  return b;
+}
+
+int main() {
+  int ia = 1, ib = 2;
+  double da = 9.1, db = 0.5;
+  // replace T1 with int, T2 with double
+  cout << get_max<int, double>(ia, db) << endl;
+  // replace T1 with double, T2 with int
+  cout << get_max<double, int>(da, ib) << endl;  
+  return 0;	
+}
+@
+
+Compiling and executing the program above results in the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 1
+## 9.1
+@
+
+\subsection{Template Classes}
+
+Similar to template functions, template classes define classes that support code operating on variables or objects of unspecified types. 
+
+For example, the code below implements a template class \texttt{point} that is similar to the class \texttt{point} defined previously in this chapter, except that the variable types representing the coordinates of the point are left unspecified. When we instantiate an object of the template class we need to specify the variable type or class that will be used instead of the place-holder. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <iostream>
+using namespace std;
+
+template<class T>
+class point {
+  private:
+  T x, y;  
+  public:
+  void set_x(T nx) {
+    x = nx;	
+  }
+  void set_y(T ny) {
+   y = ny;	
+  }
+  T get_x() const { 
+    return(x);
+  }
+  T get_y() const {
+    return(y);	
+  }
+  void reflect() {
+    x = -x;
+    y = -y;	
+  }
+};
+
+int main() {
+  point<int> p;
+  p.set_x(1);
+  p.set_y(2);
+  cout << "(" << p.get_x() << "," << p.get_y() << ")" << endl;
+  p.reflect();
+  cout << "(" << p.get_x() << "," << p.get_y() << ")" << endl;
+  return 0;
+}
+@
+
+Compiling and executing the program above results in the following output, which is equivalent to the output of the \texttt{point} class example above (but the code above has the advantage that it can be used with different types such as \texttt{int}, \texttt{double}, \texttt{float}.)
+
+<<engine="Rcpp",eval=FALSE>>=
+## (1,2)
+## (-1,-2)
+@
+
+As is the case with template functions, we can have several different unspecified types or place-holders, separated my commas in the template class definition.
+
+\section{The Standard Template Library} \label{sec:c:STL}
+
+The standard template library (STL) is a collection of templates that facilitates storing, retrieving, and manipulating data. We focus below on several STL container classes that are very useful in data analysis.  Section~\ref{sec:c:notes} lists several references where more information on STL is available.
+
+A container is a class that stores multiple variables or objects, and facilitates the following three basic operations: insertion, removal, and access. 
+
+There are three general types of containers in STL. 
+
+\begin{description}
+\item[Sequence Containers.] Every object in a sequence container has a specific position in the collection. That position typically depends on the insertion order and is independent of the value of that object. 
+\item[Associative Containers.] Every object in an associative container has a specific position in the collection. That position depends on the value of the object and is independent of the insertion order.
+\item[Unordered Containers.] Every object in an unordered container has a specific position. That position is immaterial as it is not dependent on the value of the object and the insertion order, and may even change without advance warning.  
+\end{description}
+
+The precise implementation of these three container types is not specified by the C++ language, and may depend on the specific compiler being used. However, sequence containers are usually implemented as arrays or linked lists. Associative containers are usually implemented as binary trees. Unordered containers are usually implemented as hash tables, for example using an array of linked lists for collision handling. 
+
+\subsection{Sequence Containers}
+
+There are four types of sequence containers in STL: vectors, deques, arrays, and lists. 
+
+A vector is similar to a C++ array except that it provides functionality for modifying its size. Vectors provide random access to its objects, implying that the $k$-element of a vector can be accessed immediately, without going over the entire vector. Appending or removing objects at the end of the array is usually fast as the typical implementation allocates more memory for an initialized vector than required\footnote{Occasionally more memory needs to be allocated when an object is appended to the end of a vector. However, these cases are rare and the insertion operation is considered fast in an amortized sense.}. Inserting an element at the beginning or the middle of a vector is slow, since all or several of the vector elements need to be moved to make space to the new element.
+
+The elements of a vector can be accessed using the square brackets notation. Elements can be appended to the end using the member function \texttt{push\_back}. The member function \texttt{size} returns the size of the vector. 
+
+The following example defines a vector of type \texttt{int}, inserts 10 elements and prints them.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <vector>
+#include <iostream>
+using namespace std;
+
+int main() {
+  vector <int> vi;
+  for (int i = 0; i < 10; ++i)  // store 1..10
+    vi.push_back(i);
+  for (const auto& r : vi) // print all elements
+    cout << r << " ";
+  cout << endl;
+  return 0;
+}
+@
+
+Compiling and executing the program above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## 0 1 2 3 4 5 6 7 8 9
+@
+
+As is the case with other STL containers, vectors can hold complex objects including objects corresponding to user defined classes. The example below defines a vector where each element is a vector of integers
+
+<<engine="Rcpp",eval=FALSE>>=
+vector<vector<int>> vvi;
+@
+
+A deque is similar to a vector, but it features relatively fast append and prepend operations (these operations are usually fast but sometimes slow --  see footnote in the vector description above). Deques implement (in addition to the \texttt{push\_back} method) the method \texttt{push\_front}, which prepends an object to the front of the container. 
+
+An array is similar to vector except that its size needs to be known in compilation time and it cannot be modified after it is created. It is thus similar to the statically defined C++ array concept, but it also features the member function \texttt{size} that returns its size.
+
+<<engine="Rcpp",eval=FALSE>>=
+array<int,10> ai; // define an array of 10 integers
+// initialize values of all array elements
+for (int i; i < ai.size(); ++i) 
+  ai[i] = i;
+@
+
+A list is an ordered collection of objects that does not have random access, usually implemented using a doubly connected linked list. This implies that to access an element in the middle of the list, the list has to be traversed from the beginning until reaching the desired element. The advantage of a list over vector, deque, and array is that it is much faster to add or remove elements in the middle of a list than it is in the case of a vector or deque (it is impossible in the case of an array). A \texttt{forward\_list} is similar to a list, except that it is typically implemented as a singly connected linked list and thus does not offer the member functions \texttt{size} and \texttt{push\_back}.
+
+\subsection{Associative Containers}
+
+Associative containers are ordered containers whose ordering reflects the nature of the objects rather than the insertion order. Associative containers are usually implemented using a binary tree. 
+
+A set is a container that holds multiple objects, where no two objects can be equivalent. A multiset is similar to set but may hold multiple equivalent objects. It is important that the operators \texttt{<} and \texttt{==} be defined for the objects so that the container will reflect the correct order and so that the set can enforce the constraint that no two equivalent elements can exist at the same time.
+
+The following example constructs a set of \texttt{int} variables and then inserts four strings with one string being inserted twice. It then proceeds to print all elements in the set using a for loop. Note that the element that was inserted twice appears only once, and that the elements are printed in alphabetic ordering, rather than in the order of insertion. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <set>
+#include <string>
+#include <iostream>
+using namespace std;
+
+int main() {
+  set<string> si;
+  si.insert({"one"});
+  si.insert({"two"});
+  si.insert({"three"});
+  si.insert({"one"});
+  for (const auto& r : si) // print all elements
+    cout << r << " ";
+  cout << endl;
+  return 0;
+}
+@
+
+Compiling and executing the program above gives the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## one three two
+@
+
+Replacing the \texttt{set<string>} above with \texttt{multiset<int>} results in the following output.
+
+<<engine="Rcpp",eval=FALSE>>=
+## one one three two
+@
+
+%Before describing maps and multimaps we describe the related concept of pair. 
+The template struct \texttt{pair} holds a pair of variables or objects of unspecified variable types or classes. The two variables or objects may have different unspecified types. For example, \texttt{pair<int, double>} holds an \texttt{int} variable and a \texttt{double} variable. The two variables can be accessed by referring to the public fields \texttt{first} and \texttt{second}.
+
+<<engine="Rcpp",eval=FALSE>>=
+pair<int, double> pid;
+pid.first = 10;
+pid.second = 3.0;
+@
+
+Maps and multimaps are containers that store objects of type \texttt{pair<K,V>} (pairs of two objects -- the first object is of the unspecified type \texttt{K} (for key) and the second is of the unspecified type \texttt{V} (for value). The elements in the map container are ordered based on the key component of the pairs (note that \texttt{<} and \texttt{==} need to be defined for \texttt{K} type or class). A map may not have more than one pair with the same key, while a multimap may have multiple pairs with the same key. 
+
+The usefulness of maps and multimaps stems from being able to look up container elements based on their key values relatively fast. Below is an example of a multimap containing multiple pairs of strings and integers, for example a list of names followed by orders. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <map>
+#include <string>
+#include <iostream>
+using namespace std;
+
+int main() {
+  multimap<string, int> mmsi;
+  mmsi.insert({"John", 3});
+  mmsi.insert({"Peter", 2});
+  mmsi.insert({"Jane", 6});
+  mmsi.insert({"Jane", 2});
+  for (const auto& r : mmsi) // print all elements
+    cout << r.first << ": " << r.second << endl;
+  return 0;
+}
+@
+
+Compiling and executing the program above results in the following output. 
+
+<<engine="Rcpp",eval=FALSE>>=
+## Jane: 6
+## Jane: 2
+## John: 3
+## Peter: 2
+@
+
+Note that the elements are printed above in the order specified by the keys (in this case the default alphabetic order on strings) and that since we used multimap instead of a map two objects with the same key (Jane) exist.
+
+Elements in a map can also be accessed using square brackets surrounding the corresponding key. Since this notation resembles an array notation, maps and multimaps are often called associative arrays (arrays indexed by keys rather than by a sequence of consecutive integers).
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <map>
+#include <string>
+#include <iostream>
+using namespace std;
+
+int main() {
+  map<string,int> msi;
+  msi["John"] = 3;
+  msi["Jane"] = 6;
+  for (const auto& r : msi) // print all elements
+    cout << r.first << ": " << r.second << endl;
+  cout << "msi[\"John\"]:" << msi["John"] << endl;
+  cout << "msi[\"Jane\"]:" << msi["Jane"] << endl;
+  return 0;
+}
+@
+
+Compiling and executing the program above gives the following output. 
+
+<<engine="Rcpp",eval=FALSE>>=
+## Jane: 6
+## John: 3
+## msi["John"]: 3
+## msi["Jane"]: 6
+@
+
+
+\subsection{Unordered Containers}
+
+Unordered containers are similar to associative containers, except that the ordering of the objects is unreliable and in general may be independent of both the insertion order and the stored objects. 
+
+Unordered containers are typically implemented using a hash-table, for exampling as an array of linked lists for handling collisions. Thus, it is generally very fast to insert and to look-up specific values in an unordered array\footnote{In some cases insertion and look-up may be very slow, but they are fast in an amortized sense.}. 
+
+The code below shows how replacing the map in the example above by an unordered map simply results in the objects being traversed out of order (in the above case of ordered map the ordering was alphabetic: Jane, Jane, John, Peter).
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <unordered_map>
+#include <string>
+#include <iostream>
+using namespace std;
+
+int main() {
+  unordered_multimap<string,int> mmsi;
+  mmsi.insert({"John", 3});
+  mmsi.insert({"Peter", 2});
+  mmsi.insert({"Jane", 6});
+  mmsi.insert({"Jane", 2});
+  for (const auto& r : mmsi) // print all elements
+    cout << r.first << ": " << r.second << endl;
+  return 0;
+}
+@
+
+Compiling and executing the program above gives the following output. 
+
+<<engine="Rcpp",eval=FALSE>>=
+## Jane: 2
+## Jane: 6
+## Peter: 2
+## John: 3
+@
+
+\section{Notes} \label{sec:c:notes}
+
+C++ evolved from the C language, which was initially developed by Ken Thompson and Dennis Ritchie in 1973 at Bell Labs. C++ was initially designed by Bjarne Stroustrup in the early 1980s, and continued to evolve until the most recent 2011 C++ standard C++11. C++ is considered to be one of the most popular programming languages, in particular in cases where computational efficiency is emphasized or access to the hardware and operating system is required. 
+
+There are many excellent books specifically devoted to C++. An authoritative and detailed reference book on C++ is \cite{Stroustrup2013}, while a popular textbook is \cite{Lippman2012}. The book \cite{Josuttis2012} contains a nice overview of the STL. All of the three books above are updated to include the 2011 C++11 standard.

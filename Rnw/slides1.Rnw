@@ -1,0 +1,435 @@
+\documentclass[handout]{beamer}
+%\documentclass{beamer}
+\usepackage{hyperref,amsmath}
+\setbeamertemplate{note page}[plain]
+
+<<setup, echo=FALSE>>=
+opts_chunk$set(
+		background=c(1,1,1),
+		size="small",
+        fig.width=5,
+        fig.height=3,
+        comment="##",
+        prompt=FALSE,
+        fig.align="center",
+        fig.path="figs_slides/",
+        results="markup",
+		error=FALSE,
+        warning=FALSE,
+        message=FALSE)
+theme_set(theme_bw(base_size=10))
+theme_update(axis.title.x=element_text(vjust = -0.1))
+theme_update(axis.title.y=element_text(angle=90, vjust=0.12))
+theme_update(plot.title=element_text(vjust = 1))
+update_geom_defaults("point",aes(size=3))
+update_geom_defaults("line",aes(size=1))
+set.seed(1)
+@
+
+
+\title{R Programming}
+\author{Guy Lebanon}
+
+\begin{document}
+
+\frame{\titlepage }
+
+\begin{frame}
+\frametitle{Goals}
+\begin{itemize}[<+->]
+\item Understand when to use R and when not to use it
+\item Understand basic syntax and be able to write short programs 
+\item Understand scalability issues in R and different ways to resolve them
+\item Prepare for the next module: visualizing data with R
+\end{itemize}
+Module will be separated to 4 parts: (a) getting started, (b) data types, (c) control flow and functions, and (c) scalability and interfaces.
+\end{frame}
+
+\begin{frame}
+\frametitle{R, Matlab, and Python}
+
+R is similar to Matlab and Python:
+\begin{itemize}[<+->]
+\item They run inside an interactive shell or graphical user interface
+\item They emphasize storing and manipulating data as multidimensional arrays.
+\item They include many general purpose and specialized packages (linear algebra, statistics, ML, etc.)
+\item They are typically slower than C, C++, and Fortran (though vectorization can help)
+\item They can interface with native C++ code for speeding up bottlenecks
+\end{itemize}
+\end{frame}
+
+
+%\note[itemize]{
+%\item point 1
+%\item point 2
+%}
+
+
+\begin{frame}
+\frametitle{R, Matlab, and Python}
+%\framesubtitle{A bit more information about this}
+
+The three languages differ:
+\begin{itemize}[<+->]
+\item R and Python are open-source and free. Matlab is not.
+\item It is easier to contribute packages to R
+\item R has a large group of motivated contributors who contribute high quality packages
+\item R syntax is more suitable for statistics and data
+\item R has better graphics capabilities
+\item R is popular in statistics, biostatistics, and social sciences. Matlab is popular in engineering and applied math. Python is popular in web development and scripting.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\includegraphics[scale=0.5]{figure/package_growth.pdf}	
+\end{frame}
+
+\begin{frame}
+\frametitle{Running R}
+
+\begin{itemize}[<+->]
+\item Interactively: 
+\begin{itemize} 
+  \item Type \texttt{R} in prompt (type \texttt{q()} to quit)
+  \item R graphic application
+  \item R-Studio
+  \item Within Emacs
+\end{itemize}
+\item Non-Interactively: 
+\begin{itemize} 
+  \item call script from R: \texttt{source("foo.R")} 
+  \item call script from shell: \texttt{R CMD BATCH foo.R}
+  \item call script from shell: \texttt{Rscript foo.R}
+  \item executable script, prefixed by \texttt{\#!/usr/bin/Rscript}, followed by \texttt{./foo.R < inFile > outFile}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\includegraphics[scale=0.2]{pdf/rstudio}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{R Language}
+\begin{itemize}[<+->]
+\item drops whitespace, semi-colons optional but are needed for multiple commands in the same line
+\item comments: \#
+\item case sensitive
+\item functional and object oriented programming (\texttt{a=b} rephrased as \texttt{'='(a,b)})
+\item interpreted but with lazy evaluation
+\item not strongly typed
+\item \texttt{help()} displays help on a function, dataset, etc.
+\end{itemize}
+
+<<eval=T>>=
+a = 3.2
+a = "a string"; b = 2  # no strong typing
+print(a)  
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<eval=F>>=
+ls()  # list variable names in workspace memory
+# save all variables to a file
+save.image(file = "R_workspace")  
+# save specified variables
+save(new.var, legal.var.name, file = "R_workspace")  
+# load variables saved in file
+load("R_workspace")
+help("load")
+install.packages("ggplot2")
+library(ggplot2)
+system("ls -al")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Scalars}
+Major scalar types: numeric, integer, logical, string, dates, and factors (\texttt{NA}: not available)
+<<Rfactor, eval=F>>=
+a = 3.2; b = 3  # double types
+c = as.integer(b)  # cast to integer type
+d = TRUE
+e = as.numeric(d)  # casting to numeric
+f = "this is a string"  # string
+ls.str()  # show variables and their types
+
+## a: num 3.2
+## b: num 3
+## c: int 3
+## d: logi TRUE 
+## e: num 1
+## f: chr "this is a string"
+@
+\end{frame}
+
+\begin{frame}[fragile]
+Factors can be ordered or unordered
+<<eval=F>>=
+# ordered factor
+current.season = factor("summer",
+  levels = c("summer", "fall", "winter", "spring"), 
+  ordered = TRUE)
+# unordered factor
+my.eye.color = factor("brown", 
+  levels = c("brown", "blue", "green"), ordered = FALSE)  
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Vectors and Arrays}
+
+<<eval=F>>=
+x = c(4, 3, 3, 4, 3, 1)  # c for concatenate
+length(x)  # return length
+2*x+1  # element-wise arithmetic
+# Boolean vector (default is FALSE)
+y = vector(mode = "logical", length = 4)
+# numeric vector (default is 0)
+z = vector(length = 3, mode = "numeric")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<eval=F>>=
+q = rep(3.2, times = 10) # repeat value multiple times
+w = seq(0, 1, by = 0.1)  # values in [0,1] in 0.1 increments
+w = seq(0, 1, length.out = 11)  # equally spaced values
+w <= 0.5  # boolean vector
+any(w <= 0.5)  # is it true for some elements?
+all(w <= 0.5)  # is it true for all elements?
+which(w <= 0.5)  # for which elements is it true?
+w[w <= 0.5]  # extracting from w entries for which w<=0.5
+subset(w, w <= 0.5)  # an alternative with the subset function
+w[w <= 0.5] = 0  # zero out all components <= 0.5
+@
+\end{frame}
+
+\begin{frame}[fragile]
+Arrays are multidimensional generalization of vectors.
+<<eval=F>>=
+z = seq(1, 20,length.out = 20)  # create a vector 1,2,..,20
+x = array(data = z, dim = c(4, 5))  # create a 2-d array
+x[2,3]  # refer to the second row and third column
+x[2,]  # refer to the entire second row
+x[-1,]  # all but the first row - same as x[c(2,3,4),]
+y = x[c(1,2),c(1,2)]  # 2x2 top left sub-matrix
+2 * y + 1  # element-wise operation
+y %*% y  # matrix product (both arguments are matrices)
+x[1,] %*% x[1,]  # inner product
+t(x)  # matrix transpose
+outer(x[,1], x[,1])  # outer product
+rbind(x[1,], x[1,])  # vertical concatenation
+cbind(x[1,], x[1,])  # horizontal concatenation
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Lists}
+Lists are ordered collections of possibly different types. Named positions allow creating self-describing data.
+
+<<eval=F>>=
+L=list(name = 'John', age = 55, 
+       no.children = 2, children.ages = c(15, 18))
+names(L)  # displays all position names
+L[[2]]  # second element
+L[2]  # list containing second element
+L$name  # value in list corresponding to name
+L['name']  # same thing
+L$children.ages[2]  # same as L[[4]][2]
+@
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{Dataframes}
+Dataframe are ordered sequence of lists sharing the same signature. A popular usecase is a table where rows correspond to data examples and columns correspond to dimensions or features.
+
+<<eval=T>>=
+vecn = c("John Smith","Jane Doe")
+veca = c(42, 45)
+vecs = c(50000, 55000)
+R = data.frame(name = vecn, age = veca, salary = vecs)
+R
+names(R) = c("NAME", "AGE", "SALARY")  # modify column names
+R
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Datasets}
+Example: Iris dataset (in \texttt{datasets} package)
+
+<<eval=F>>=
+names(iris)  # lists the dimension (column) names
+head(iris, 4)  # show first four rows
+iris[1,]  # first row
+iris$Sepal.Length[1:10]  # sepal length of first ten samples
+# allow replacing iris$Sepal.Length with shorter Sepal.Length
+attach(iris, warn.conflicts = FALSE)
+mean(Sepal.Length)  # average of Sepal.Length across all rows
+colMeans(iris[,1:4])  # means of all four numeric columns
+subset(iris, Sepal.Length < 5 & Species != "setosa")
+# count number of rows corresponding to setosa species
+dim(subset(iris, Species == "setosa"))[1]
+summary(iris)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{If-Else}
+
+<<eval=T>>=
+a = 10; b = 5; c = 1
+if (a < b) {
+  d = 1
+} else if (a == b) {
+  d = 2
+} else {
+  d = 3
+}
+print(d)
+@
+
+AND: \texttt{\&\&}, OR: \texttt{||}, equality: \texttt{==}, inequality: \texttt{!=}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Loops}
+For, repeat, and while loops:
+<<eval=F>>=
+sm=0  
+# repeat for 100 iteration, with num taking values 1:100
+for (num in seq(1, 100, by = 1)) {
+  sm = sm + num
+}
+repeat {
+  sm = sm - num
+  num = num - 1
+  if (sm == 0) break  # if sm == 0 then stop the loop
+}
+a = 1; b = 10
+while (b>a) {
+  sm = sm + 1
+  a = a + 1
+  b = b - 1
+}
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Functions}
+By default, arguments flow into the parameters according to their order at the call site. Providing parameter names allow out of order binding. 
+
+<<eval=F>>=
+foo(10, 20, 30)  # parameter bindings by order
+foo(y = 20, x = 10, z = 30)  # out of order parameter bindings
+foo(z = 30)  # missing parameters assigned default values
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<eval=F>>=
+# myPower(.,.) raises the first argument to the power of the
+# second. The first argument is named bas and has default value 10.
+# The second parameter is named pow and has default value 2.
+myPower = function(bas = 10, pow = 2) {
+    res = bas^pow  # raise base to a power
+    return(res)
+}
+myPower(2, 3)  # 2 is bound to bas and 3 to pow (in-order)
+# same binding as above (out-of-order parameter names)
+myPower(pow = 3, bas = 2)
+myPower(bas = 3)  # default value of pow is used
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Vectorized Code}
+Vectorized code runs much faster than loops due to R interpreter overhead.
+
+<<eval=T>>=
+a = 1:10000000; res = 0
+system.time(for (e in a) res = res + e^2)
+system.time(sum(a^2))
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{External/Native API}
+Often, 10\% percent of the code is responsible for 90\% of computing time. Implementing bottlenecks in C/C++ allows staying mostly within the R environment. 
+
+<<engine="Rcpp",eval=FALSE>>=
+dyn.load("fooC2.so")  # load compiled C code
+A = seq(0, 1, length = 10)
+B = seq(0, 1, length = 10)
+.Call("fooC2", A, B)
+@
+
+Newer packages: Rcpp, RcppArmadillo, RcppEigen
+\end{frame}
+
+\begin{frame}[fragile]
+<<R251,eval=T,echo=F>>=
+dyn.load("fooC.so")  # load the compiled C code
+A = seq(0, 1, length = 10)
+B = seq(0, 1, length = 10)
+C = rep(0, times = 10)
+L = .C("fooC", A, B, as.integer(10), C)
+ResC=L[[4]]  # extract 4th list element containing result
+ResC
+fooR = function(A, B, n) {
+    res = rep(0, times = n)
+    for (i in 1:n)
+        for (j in 1:n)
+            res[i] = res[i]+(A[j]+i)^(B[j])
+    return(res)
+}
+ResR=fooR(A, B, 10)
+ResR
+sizes = seq(10, 1000, length = 10)
+Rtime = rep(0, 10)
+Ctime = Rtime 
+i = 1
+for (n in sizes) {
+    A = seq(0, 1,length = n)
+    B = seq(0, 1,length = n)
+    C = rep(0, times = n)
+    Ctime[i] = system.time(.C("fooC", A, B, as.integer(n), C))
+    Rtime[i] = system.time(fooR(A, B, n))
+    i = i+1
+}
+DF = stack(list(C = Ctime, R = Rtime))
+names(DF) = c("system.time", "language")
+DF$size = sizes
+# plot run time as a function of array size for R and 
+# .C implementations
+qplot(x = size,
+      y = system.time,
+      lty = language, 
+	  color = language, 
+      data = DF,
+      size = I(1.5), 
+	  geom = "line", 
+      xlab = "array size", 
+	  ylab = "computation time (sec)")
+@  
+\end{frame}
+
+
+\end{document}

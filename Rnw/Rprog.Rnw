@@ -1,0 +1,684 @@
+\label{chap:R}
+
+%This chapter provides a self-contained introduction to the R programming language. 
+
+%------------------------------------------------------------
+\section{R, Matlab, and Python}
+
+R is a programming language especially designed for data analysis and data visualization. In some cases it is more convenient to use R than C++ or Java, making R an important data analysis tool. We describe below similarities and differences between R and its close relatives Matlab and Python.
+
+R is similar to Matlab and Python in the following ways:
+\begin{itemize}
+\item They run inside an interactive shell in their default setting. In some cases this shell is a complete graphical user interface (GUI).
+\item They emphasize storing and manipulating data as multidimensional arrays.
+\item They interface packages featuring functionalities, both generic, such as matrix operations, SVD, eigenvalues solvers, random number generators, and optimization routines; and specialized, such as kernel smoothing and support vector machines.
+\item They exhibit execution time slower than that of C, C++, and Fortran, and are thus poorly suited for analyzing massive\footnote{The slowdown can be marginal or significant, depending on the program's implementation. Vectorized code may improve computational efficiency by performing basic operations on entire arrays rather than on individual array elements inside nested loops.} data.
+\item They can interface with native C++ code, supporting large scale data analysis by implementing computational bottlenecks in C or C++.
+\end{itemize}
+
+The three languages differ in the following ways:
+\begin{itemize}
+\item R and Python are open-source and freely available for Windows, Linux, and Mac, while Matlab requires an expensive license.
+\item R, unlike Matlab, features ease in extending the core language by writing new packages, as well as in installing packages contributed by others.
+\item R features a large group of motivated contributors who enhance the language by implementing high-quality packages\footnote{Figure~\ref{fig:packages} demonstrates the rapid growth in the number of packages (see also \cite{Fox2009}). All contributed packages go through a quality control process, and enforcement of standards, and have common documentation format.}.
+\item Developers designed R for statistics, yielding a syntax much better suited for computational data analysis, statistics, and data visualization.
+\item Creating high quality graphs in R requires less effort than it does in Matlab and Python.
+\item R is the primary programming language in the statistics, biostatistics, and social sciences communities, while Matlab is the main programming language in engineering and applied math, and Python is a popular general purpose scripting and web development language.
+\end{itemize}
+
+%----------------------------------------------------------
+\section{Getting Started}
+
+The first step is to download and install a copy of R on your computer. R is available freely for Windows, Linux, and Mac at the R Project website \href{http://cran.r-project.org}{http://cran.r-project.org}.
+
+The two most common ways to run R are
+\begin{itemize}
+\item in a terminal prompt, by typing \texttt{R} in a Linux or Mac terminal, and
+\item inside a GUI, by double clicking the R icon on Windows or Mac or by typing \texttt{R -g Tk \&} on Linux.
+\end{itemize}
+
+Other ways to run R include
+\begin{itemize}
+\item using the Emacs Speaks Statistics (ESS) package from within Emacs,
+\item using a third party GUI such as R-Studio (freely available from \\ \href{http://www.rstudio.org}{http://www.rstudio.org}; see Figure~\ref{fig:rstudio} for a screen shot), and
+\item running R from a client that accesses an R server application.
+\end{itemize}
+The easiest way to quit R is to type \texttt{q()} at the R prompt or to close the corresponding GUI window.
+
+
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.7]{figure/package_growth.pdf}
+
+%<<R01,echo=FALSE,fig.height=5>>=
+%Packages=read.table("packages.txt",header=TRUE)
+%Packages$date=as.Date(Packages$date)
+%qplot(x = date,y = count,log = "y",data = Packages,main = "Near exponential growth in contributed packages", xlab = "", ylab = "") + stat_smooth(method = "lm") +opts(axis.text.x = theme_text(angle = 90))
+%@
+
+\caption{An almost linear growth on the log scale of the number of contributed R packages indicates a growth rate that is close to exponential. See \cite{Fox2009} for more details and an interesting description of the open source social movement behind R. The straight line shows linear regression fit. At the time of writing the number of current packages exceeds 8000.}
+\label{fig:packages}
+\end{figure}
+
+\begin{figure}\centering
+\includegraphics[scale=0.25]{pdf/rstudio}
+\caption{Screenshot of the  R development environment R-Studio available from \href{http://www.rstudio.org}{http://www.rstudio.org}.}
+\label{fig:rstudio}
+\end{figure}
+
+Like other programming languages, R code consists of a sequence of commands. Often, every command in R is typed in its own line. Alternatively, one line may contain multiple commands, separated by semicolons. Comments require a hash sign \texttt{\#} and occupy the remainder of the current line.
+
+<<eval=T>>=
+# This is a comment
+a = 4  # single statement 
+a = 4; b = 3; c = b  # multiple statements
+@
+
+R is a functional object oriented language in that everything that happens is a function call and everything that exists is an object. For example, \texttt{a = b} is equivalent to the function call \texttt{'='(a, b)}, and accessing an array element \texttt{a[3]} is equivalent to the function call \texttt{'['(a, 3)}. R features lazy evalution in that function arguments or other expressions are only evaluated when (and if) they are actually used.
+
+Since R, unlike C++ or Java, is not strongly typed, we can define a variable without expressing a type and can even change a variable's type within the same session. Thus, the following is quite legal.
+
+<<eval=T>>=
+a = 3.2
+a = "string"
+@
+
+We can display the value of any variable using the \texttt{print()} function or by simply typing its name. Below, we use a double hash symbol \texttt{\#\#} to prefix any output printed by the R program. 
+
+<<eval=T>>=
+a = 4
+print(a)
+a  # same thing
+cat(a)  # same thing
+# cat can print multiple variables one after the other 
+cat("The value of the variable a is: ", a)
+@
+
+As shown above, we set variables with the assignment operator \texttt{=}. An alternative is the operator \texttt{<-}, as in \texttt{a <- 4} or \texttt{4 -> a}. We use the classical \texttt{=} operator since it is more similar to assignment operators in other languages.
+
+Strings in R are sequences of case sensitive characters surrounded by single or double quotes. To get help on a specific function, operator, or data object, type \texttt{help(X)} where \texttt{X} is the corresponding string. Similarly, \texttt{example(X)} shows an example of the use of the function \texttt{X}. The function \texttt{help.start(X)} starts an html-based documentation within a browser, which is sometimes easier to navigate. Searching the help documentation using \texttt{help.search(X)} is useful if you cannot recall the precise string on which you want to seek help. In addition to the commands above, searching the web using a search engine often provides useful results. 
+
+In R, periods can be used to delimit words within a variable name; for example, \texttt{my.parallel.clustering} is a legitimate name for a variable or a function. The \$ operator in R has a similar role to the period operation in C++ and Java.
+
+Here are some important commands with short explanations.
+
+<<eval=FALSE>>=
+x = 3  # assign value 3 to variable x
+y = 3*x + 2  # basic variable assignment and arithmetic
+ratio.of.x.and.y = x / y  # divide x by y and assign result
+ls()  # list variable names in workspace memory
+ls(all.names = TRUE)  # list all variables including hidden ones
+ls.str()  # print annotated list of variable names
+save.image(file = "fname")  # save all variables to a file
+save(x, y, file = "fname")  # save specified variables
+rm(x, y)  # clear variables x and y from memory
+rm(list = ls())  # clear all variables in workspace memory
+load(varFile)   # load variables from file back to the workspace
+history(15)  # display 15 most recent commands
+@
+
+The precise interaction of the command line or R IDE tool (like R-Studio) depends on the operating system and IDE program. In general, pressing the up arrow key and down arrow key allows browsing through the command history for previous commands. This can be very useful for fixing typos or for executing slight modifications of long commands. In the Linux and Mac terminal, Control-R takes a text pattern and returns the most recent command containing that pattern.
+
+Upon exiting R with the \texttt{q()} function, the command line prompts the user to save the workspace memory. Saving the workspace memory places all current variables in a file named \texttt{.RData} in the current directory. Launching R automatically uploads that file if it exists in the current directory, retrieving the set of variables from the previous session in that directory. Inside R, the user can change directories or view the current directory using \texttt{setwd(X)} and \texttt{getwd()} respectively (\texttt{X} denotes a string containing a directory path). The function \texttt{system(X)} executes the shell command \texttt{X}.
+
+<<eval=FALSE>>=
+# change directory to home directory
+setwd("~")  
+# display all files in current directory
+dir(path = ".", all.files = TRUE)
+# execute bash command ls -al (in Linux)
+system("ls -al")  
+@
+
+As stated earlier, R features easy installation of both core R and third party packages.  The function \texttt{install.packages(X)} installs the functions and datasets in the package \texttt{X} from the Internet. After installation the function \texttt{library(X)} brings the package into scope, thus making the functions and variables in the package \texttt{X} available to the programmer. This two-stage process mitigates potential overlap in the namespaces of libraries. Typically, an R programmer would install many packages\footnote{The number of available packages is over 8000 in the year 2015; see Figure~\ref{fig:packages} for the growth trajectory.} on his or her computer, but have only a limited number in scope at any particular time. A list of available packages, their implementation and documentation is available at \href{http://cran.r-project.org/web/packages/}{http://cran.r-project.org/web/packages/}.
+These packages often contain interesting and demonstrative datasets. The function \texttt{data} lists the available datasets in a particular package.
+
+<<eval=FALSE>>=
+# install package ggplot2
+install.packages("ggplot2")
+# install package from a particular mirror site
+install.packages("ggplot2", repos="http://cran.r-project.org")
+# install a package from source, rather than binary
+install.packages("ggplot2", type = "source")
+library('ggplot2')  # bring package into scope
+# display all datasets in the package ggplot2
+data(package = 'ggplot2')
+installed.packages()  # display a list of installed packages
+update.packages()  # update currently installed packages
+@
+
+R attempts to match a variable or function name by searching the current working environment followed by the packages that are in scope (loaded using the \texttt{library} function) with the earliest match used if there are multiple matches. The function \texttt{search} displays the list of packages that are being searched for a match and the search order with the first entry defaulting to the working environment, represented by \texttt{.GlobalEnv}. As a result, the working environment may mask variables or functions that are found further down the search path.
+
+The code below demonstrates masking the variable \texttt{pi} by a global environment variable with the value 3, and retrieving the original value after clearing it.
+
+<<eval=T>>=
+pi
+pi = 3  # redefines variable pi
+pi  # .GlobalEnv match
+rm(pi)  # removes masking variables
+pi
+@
+
+The function \texttt{sink(outputFile)} records the output to the file \texttt{outputFile} instead of the display, which is useful for creating a log-file for later examination. To print the output both to screen and to a file, use the following variation.
+
+<<eval=FALSE>>=
+sink(file = 'outputFile', split = TRUE)
+@
+
+We have concentrated thus far on executing R code interactively. To execute R code written in a text file \texttt{foo.R} (\texttt{.R} is the conventional filename extension for R code) use either
+\begin{itemize}
+\item  the R function \texttt{source("foo.R")},
+\item  the command \texttt{R CMD BATCH foo.R} from a Linux or Mac terminal, or
+\item the command \texttt{Rscript foo.R} from a linux or R terminal.
+\end{itemize}
+
+It is also possible to save the R code as a shell script file whose first line corresponds to the location of the \texttt{Rscript} executable program, which in most cases is the following line.
+\begin{verbatim}
+#!/usr/bin/Rscript
+\end{verbatim}
+The file can then be executed by typing its name in the Linux or Mac OS terminal (assuming it has executable permission). This option has the advantage of allowing Linux style input and output redirecting via \texttt{foo.R < inFile > outFile} and other shell tricks.
+
+The last three options permit passing parameters to the script, for example using  \texttt{R CMD BATCH --args arg1 arg2 foo.R} or \texttt{Rscript foo.R arg1 arg2}.  Calling \texttt{commandArgs(TRUE)} inside a script retrieves the command line arguments as a list of strings. 
+
+%-------------------------------------------------------
+\section{Scalar Data Types}
+
+As we saw in the case of C++ and Java, a variable may refer to a scalar or a collection. Scalar types include numeric, integer, logical, string, dates, and factors. Numeric and integer variables represent real numbers and integers, respectively. A logical or binary variable is a single bit whose value in R is \texttt{TRUE} or \texttt{FALSE}. Strings are ordered sequences of characters. Dates represent calendar dates. Factor variables represent values from an ordered or unordered finite set. Some operations can trigger casting between the various types. Functions such as \texttt{as.numeric} can perform explicit casting.
+
+<<R07,eval=TRUE,echo=FALSE,silent=TRUE>>=
+rm(list = ls())  # clear all variables
+@
+
+<<Rfactor, eval=T>>=
+a = 3.2; b = 3  # double types
+b
+typeof(b)  # function returns type of object
+c = as.integer(b)  # cast to integer type
+c
+typeof(c)
+c = 3L  # alternative to casting: L specifies integer
+d = TRUE
+d
+e = as.numeric(d)  # casting to numeric
+e
+f = "this is a string"  # string
+f
+ls.str()  # show variables and their types
+@
+
+Factor variables assume values in a predefined set of possible values. The code below demonstrates the use of factors in R.
+
+<<eval=T>>=
+current.season = factor("summer",
+          levels = c("summer", "fall", "winter", "spring"),
+          ordered = TRUE)  # ordered factor
+current.season
+levels(current.season)  # display factor levels
+my.eye.color = factor("brown", levels = c("brown", "blue", "green"),
+          ordered = FALSE)  # unordered factor
+my.eye.color
+@
+
+The value \texttt{NA} (meaning Not Available) denotes missing values. When designing data analysis functions, \texttt{NA} values should be carefully handled. Many functions feature the argument \texttt{na.rm} which, if \texttt{TRUE}, operates on the data after removing any \texttt{NA} values.
+
+%---------------------------------------------------------------------------------------
+\section{Vectors, Arrays, Lists, and Dataframes}
+
+Vectors, arrays, lists, and dataframes are collections that hold multiple scalar values\footnote{Formally, a numeric scalar in R is a vector of size 1 and thus it is not fundamentally different from a vector.}. A vector is a one-dimensional ordered collection of variables of the same type. An array is a multidimensional generalization of vectors of which a matrix is a two-dimensional special case. Lists are ordered collections of variables of potentially different types. The list signature is the ordered list of variable types in the list. A dataframe is an ordered collection of lists having identical same signature.
+
+To refer to specific array elements use integers inside square brackets. For example \texttt{A[3]} refers to the third element and \texttt{A[c(1, 2)]} refers to the first two elements. Negative integers inside the square bracket corresponds to a selection of all elements except for the specified positions, for example \texttt{A[-3]} refers to all elements but the third one. It is also possible to refer to array elements by passing a vector of boolean values with the selected elements corresponding to the \texttt{TRUE} values. For example \texttt{A[c(TRUE, TRUE, FALSE)]} corresponds to the third element. If the boolean vector is shorter than the array length it will be recycled to be of the same length.
+
+Below are some examples of creating and handling vectors and arrays.
+
+<<eval=T>>=
+# c() concatenates arguments to create a vector
+x=c(4, 3, 3, 4, 3, 1)  
+x
+length(x)
+2*x+1  # element-wise arithmetic
+# Boolean vector (default is FALSE)
+y = vector(mode = "logical", length = 4)
+y
+# numeric vector (default is 0)
+z = vector(length = 3, mode = "numeric")
+z
+q = rep(3.2, times = 10) # repeat value multiple times
+q
+w=seq(0, 1, by = 0.1)  # values in [0,1] in 0.1 increments
+w
+# 11 evenly spaced numbers between 0 and 1
+w=seq(0, 1, length.out = 11)
+w
+# create an array with TRUE/FALSE reflecting whether condition holds
+w <= 0.5
+any(w <= 0.5)  # is it true for some elements?
+all(w <= 0.5)  # is it true for all elements?
+which(w <= 0.5)  # for which elements is it true?
+w[w <= 0.5]  # extracting from w entries for which w<=0.5
+subset(w, w <= 0.5)  # an alternative with the subset function
+w[w <= 0.5] = 0  # zero out all components smaller or equal to 0.5
+w
+@
+
+Arrays are multidimensional generalizations of vectors; the \texttt{dim} attribute specifies the dimension. Matrices correspond to two dimensional arrays. Referring to a specific array elements can be done by including the coordinates inside the square brackets (separated by commas), for example \texttt{A[1,2]} correspond to the element at the first row and second column of \texttt{A}. Leaving a specific dimension selection blank inside the square brackets corresponds to selecting the entire dimension. For example \texttt{A[1,]} corresponds to the first row of \texttt{A}. As in the case of vectors, negative integers correspond to a selection of all but the selected coordinate. 
+
+<<eval=T>>=
+z = seq(1, 20,length.out = 20)  # create a vector 1,2,..,20
+x = array(data = z, dim = c(4, 5))  # create a 2-d array
+x
+x[2,3]  # refer to the second row and third column
+x[2,]  # refer to the entire second row
+x[-1,]  # all but the first row - same as x[c(2,3,4),]
+y = x[c(1,2),c(1,2)]  # 2x2 top left sub-matrix
+2 * y + 1  # element-wise operation
+y %*% y  # matrix product (both arguments are matrices)
+# inner product (both vectors have the same dimensions)
+x[1,] %*% x[1,]  
+t(x)  # matrix transpose
+outer(x[,1], x[,1])  # outer product
+rbind(x[1,], x[1,])  # vertical concatenation
+cbind(x[1,], x[1,])  # horizontal concatenation
+@
+
+We can access multidimensional array elements using a single index. The single index counts elements by traversing the array by columns, then rows, then other dimensions where appropriate.
+
+<<eval=T>>=
+A = matrix(c(1, 2, 3, 4), nrow = 2, ncol = 2)
+A
+A[3]  # counting by columns A[3]=A[1,2]
+@
+
+Lists are ordered collections which permit positions to hold variables of different types. For example, a list may hold a floating point in its first position, an integer in its second position, and a 3-D array in its third position. Lists can also be elements of other lists. If \texttt{L} is a list,  \texttt{L[[i]]} is the \texttt{i}-element, and \texttt{L[i]} is a list containing the \texttt{i} element.
+
+To ease the tracking of the semantics of variables in lists or vectors, we typically assign names to the different positions. This is a form of self-describing data representation: there is no need to keep meta data describing what each position holds since that information is kept in the object itself. 
+
+<<eval=T>>=
+L=list(name = 'John', age = 55, 
+       no.children = 2, children.ages = c(15, 18))
+names(L)  # displays all position names
+L[[2]]  # second element
+L[2]  # list containing second element
+L$name  # value in list corresponding to name
+L['name']  # same thing
+L$children.ages[2]  # same as L[[4]][2]
+@
+
+The function \texttt{uname(X)} removes names. Existing names can be changed by assigning a vector of strings to \texttt{names(X)}.
+
+When using arithmetic operations between arrays of different sizes, the smaller array is extended as needed, with new elements created by recycling old ones. Similarly, storing a value in a non-existing element expands the array as needed, padding with \texttt{NA} values.
+
+<<eval=T>>=
+a = c(1, 2)
+b = c(10, 20, 30, 40, 50)
+a + b
+b[7] = 70
+b
+@
+
+
+A dataframe is  an ordered sequence of lists sharing the same signature. A dataframe often serves as a table whose rows correspond to data examples (samples from a multivariate distribution) and whose columns correspond to dimensions or features.
+
+
+<<eval=T>>=
+vecn = c("John Smith","Jane Doe")
+veca = c(42, 45)
+vecs = c(50000, 55000)
+R = data.frame(name = vecn, age = veca, salary = vecs)
+R
+names(R) = c("NAME", "AGE", "SALARY")  # modify column names
+R
+@
+
+The core R package \texttt{datasets} contains many interesting and demonstrative datasets, such as the \texttt{iris} dataset, whose first four dimensions are numeric measurements describing flower geometry, and whose last dimension is a string describing the flower species.
+
+<<eval=T>>=
+names(iris)  # lists the dimension (column) names
+head(iris, 4)  # show first four rows
+iris[1,]  # first row
+iris$Sepal.Length[1:10]  # sepal length of first ten samples
+# allow replacing iris$Sepal.Length with the shorter Sepal.Length
+attach(iris, warn.conflicts = FALSE)
+mean(Sepal.Length)  # average of Sepal.Length across all rows
+colMeans(iris[,1:4])  # means of all four numeric columns
+@
+
+The \texttt{subset} function is useful for extracting subsets of a dataframe.
+
+<<eval=T>>=
+# extract all rows whose Sepal.Length variable is less than 5 
+# and whose species is not setosa
+subset(iris, Sepal.Length < 5 & Species != "setosa")
+# count number of rows corresponding to setosa species
+dim(subset(iris, Species == "setosa"))[1]
+@
+
+The function \texttt{summary} provides a useful statistical summary of the different dataframe columns. R automatically determines whether the variables are numeric, such as \texttt{Sepal.Length}, or factors, such as \texttt{Species}. For numeric variables, the \texttt{summary} function displays the minimum, maximum, mean, median, and the 25\% and 75\% percentiles. For factor variables, the \texttt{summary} function displays the number of dataframe rows in each of the factor levels.
+\label{R:summary}
+
+<<eval=T>>=
+summary(iris)
+@
+
+With appropriate formatting, we can create a dataframe using a text file. For example, we can load the following text file containing data into a dataframe in R using the \texttt{read.table(X, header=TRUE)} function (use \texttt{header=FALSE} if there is no header line containing column names). 
+
+<<engine="Rcpp",eval=FALSE>>=
+Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
+         5.1         3.5          1.4         0.2     setosa
+         4.9         3.0          1.4         0.2     setosa
+@
+
+<<eval=FALSE>>=
+# read text file into dataframe
+Iris=read.table('irisFile.txt', header = TRUE)  
+# same but from Internet location
+Iris=read.table('http://www.exampleURL.com/irisFile.txt', 
+                header = TRUE)
+@
+
+We can examine and edit dataframes and other variables within a text editor or a spreadsheet-like environment using the \texttt{edit} function. 
+
+<<eval=FALSE>>=
+edit(iris)  # examine data as spreadsheet
+iris = edit(iris)  # edit dataframe/variable
+newIris = edit(iris)  # edit dataframe/variable but keep original
+@
+
+%--------------------------------------------------------------
+\section{If-Else, Loops, and Functions}
+
+The flow of control of R code is very similar to that of other programming languages. Below are some examples of if-else, loops, function definitions, and function calls.
+
+<<eval=T>>=
+a = 10; b = 5; c = 1
+if (a < b) {
+    d = 1
+} else if (a == b) {
+    d = 2
+} else {
+    d = 3
+}
+d
+@
+
+The logical operators in R are similar to those in C++ and Java. Examples include \texttt{\&\&} for AND, \texttt{||} for OR, \texttt{==} for equality, and \texttt{!=} for inequality. 
+
+For-loops repeat for a pre-specified number of times, with each loop assigning a different component of a vector to the iteration variable. Repeat-loops repeat until a \texttt{break} statement occurs. While-loops repeat until a \texttt{break} statement occurs or until the loop condition is not satisfied. The \texttt{next} statement aborts the current iteration and proceeds to the next iteration.
+
+<<eval=T>>=
+sm=0  
+# repeat for 100 iteration, with num taking values 1:100
+for (num in seq(1, 100, by = 1)) {
+    sm = sm + num
+}
+sm  # same as sum(1:100)
+repeat {
+    sm = sm - num
+    num = num - 1
+    if (sm == 0) break  # if sm == 0 then stop the loop
+}
+sm
+a = 1; b = 10
+# continue the loop as long as b > a
+while (b>a) {
+    sm = sm + 1
+    a = a + 1
+    b = b - 1
+}
+sm
+@
+
+
+Functions in R are similar to those in  C++ and Java. When calling a function the arguments flow into the parameters according to their order at the call site. Alternatively, arguments can appear out of order if the calling environment provides parameter names.
+
+<<eval=FALSE>>=
+# parameter bindings by order
+foo(10, 20, 30)
+# (potentially) out of order parameter bindings
+foo(y = 20, x = 10, z = 30)
+@
+
+Omitting an argument assigns the default value of the corresponding parameter.
+
+<<eval=FALSE>>=
+# passing 3 parameters
+foo(x = 10, y = 20, z = 30)
+# x and y are missing and are assigned default values
+foo(z = 30)
+# in-order parameter binding with last two parameters missing
+foo(10)
+@
+
+Out of order parameter bindings and default values simplify calling functions with long lists of parameters, when many of parameters take default values.
+
+<<eval=T>>=
+# myPower(.,.) raises the first argument to the power of the
+# second. The first argument is named bas and has default value 10.
+# The second parameter is named pow and has default value 2.
+myPower = function(bas = 10, pow = 2) {
+    res=bas ^ pow  # raise base to a power
+    return(res)
+}
+myPower(2, 3)  # 2 is bound to bas and 3 to pow (in-order)
+# same binding as above (out-of-order parameter names)
+myPower(pow = 3, bas = 2)
+myPower(bas = 3)  # default value of pow is used
+@
+
+Since R passes variables by value, changing the passed arguments inside the function does not modify their respective values in the calling environment. Variables defined inside functions are local, and thus are unavailable after the function completes its execution. The returned value is the last computed variable or the one specified in a \texttt{return} function call. Returning multiple values can be done by returning a list or a dataframe.
+
+<<eval=T>>=
+x = 2
+myPower2 = function(x) {x = x^2; return(x)}
+y = myPower2(x)  # does not change x outside the function
+x
+y
+@
+
+It is best to avoid loops when programming in R. There are two reasons for this: simplifying code and computational speed-up. Many mathematical computations on lists, vectors, or arrays may be performed without loops using component-wise arithmetic. The code example below demonstrates the computational speedup resulting from replacing a loop with vectorized code.
+
+<<eval=T>>=
+a = 1:10
+# compute sum of squares using a for loops
+c = 0
+for (e in a) c = c + e^2
+c
+# same operation using vector arithmetic
+sum(a^2)
+# time comparison with a million elements
+a = 1:1000000; c = 0
+system.time(for (e in a) c = c+e^2)
+system.time(sum(a^2))
+@
+
+Another way to avoid loops is to use the function \texttt{sapply}, which applies a function passed as a second argument to the list, data-frame, or vector that is passed as a first argument. This leads to simplified code, though the computational speed-up may not apply in the same way as it did above.
+
+<<eval=T>>=
+a = seq(0, 1 ,length.out = 10)
+b = 0
+c = 0
+for (e in a) {
+    b = b + exp(e)
+}
+b
+c = sum(sapply(a, exp))
+c
+# sapply with an anonymous function f(x)=exp(x^2)
+sum(sapply(a, function(x) {return(exp(x^2))}))
+# or more simply
+sum(sapply(a, function(x) exp(x^2)))
+@
+
+
+%---------------------------------------------------------------------------------------
+\section{Interfacing with C++ Code}
+
+R is inherently an interpreted language; that is, R compiles each command at run time, resulting in many costly context switches and difficulty in applying standard compiler optimization techniques. Thus, R programs likely will not execute as efficiently as compiled programs\footnote{R does have a compiler that can compile R code to native code, but the resulting speedup is not very high.} in C, C++, or Fortran.
+
+The computational slowdown described above typically increases with the number of elementary function calls or commands. For example, R code that generates two random matrices, multiplies them, and then computes eigenvalues typically will not suffer a significant slowdown compared to similar implementations in C, C++, or Fortran. The reason is that that such R code calls routines that are programmed in FORTRAN or C++. On the other hand, R code containing many nested loops is likely to be substantially slower due to the interpreter overhead.
+
+For example, consider the code below, which compares two implementations of matrix multiplication. The first uses R's internal matrix multiplication and the second implements it through three nested loops, each containing a scalar multiplication.
+
+<<R25,eval=T>>=
+n = 100; nsq = n*n
+# generate two random matrices
+A = matrix(runif(nsq), nrow = n, ncol = n)
+B = matrix(runif(nsq), nrow = n, ncol = n)
+system.time(A%*%B)  # built-in matrix multiplication
+matMult=function(A, B, n) {
+    R=matrix(data = 0, nrow = n, ncol = n)
+    for (i in 1:n)
+      for (j in 1:n)
+          for (k in 1:n)
+              R[i,j]=R[i,j]+A[i,k]*B[k,j]
+    return(R)
+   }
+# nested loops implementation
+system.time(matMult(A, B, n))
+@
+
+The first matrix multiplication is faster by several orders of magnitude even for a relatively small $n=100$. The key difference is that the built-in matrix multiplication runs compiled C code.
+
+Clearly, it is better, if possible, to write R code containing relatively few loops and few elementary R functions. Since core R contains a rich library of elementary functions, one can often follow this strategy. In some cases, however, this approach is not possible. A useful heuristic in this case is to identify computational bottlenecks using a profiler, then re-implement the offending R code in a compiled language such as C or C++. The remaining R code will interface with the reimplemented bottleneck code via an external interface.  Assuming that a small percent of the code is responsible for most of the computational inefficiency (as is often the case), this strategy can produce substantial speedups with relatively little effort.
+
+We consider two techniques for calling compiled C/C++ code from R: the simpler \texttt{.C} function and the more complex \texttt{.Call} function. In both cases, we compile C/C++ code using the terminal command \texttt{R CMD SHLIB foo.c}, which invokes the C++ compiler and create a \texttt{foo.so} file containing the compiled code. The \texttt{.so} file can be loaded within R using the function \texttt{dynload('foo.so')} and then called using the functions \texttt{.C('foo', ...)} or \texttt{.Call('foo', ...)} (the remaining arguments contain R vectors, matrices, or dataframes that will be converted to pointers within the C/C++ code. 
+
+For example, consider the task of computing $\sum_{j=1}^n (a_j+i)^{b_j}$ for all $i,j=1,\ldots,n$ given two vectors $a$ and $b$ of size $n$. The C code to compute the result appears below. The first two pointers point to arrays containing the vectors $a$ and $b$, the third pointer points to the length of the arrays, and the last pointer points to the area where the results should appear. Note the presence of the pre-processor directive \texttt{include<R.h>}. 
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <R.h>
+#include <math.h>
+
+void fooC(double* a, double* b, int* n, double* res) {
+  int i, j;
+  for (i = 0;i < (*n); i++) {
+    res[i] = 0;
+    for (j = 0;j < (*n); j++)
+      res[i] += pow(a[j] + i + 1, b[j]);
+  }
+}
+@
+
+Saving the code above as the file \texttt{fooC.c} and compiling using the terminal command below produces the file \texttt{fooC.so} that can be linked to an R session with the \texttt{dynload} function.
+
+\begin{verbatim}
+R CMD SHLIB fooC.c
+\end{verbatim}
+
+<<R251,eval=T>>=
+dyn.load("fooC.so")  # load the compiled C code
+A = seq(0, 1, length = 10)
+B = seq(0, 1, length = 10)
+C = rep(0, times = 10)
+L = .C("fooC", A, B, as.integer(10), C)
+ResC=L[[4]]  # extract 4th list element containing result
+ResC
+fooR = function(A, B, n) {
+    res = rep(0, times = n)
+    for (i in 1:n)
+        for (j in 1:n)
+            res[i] = res[i]+(A[j]+i)^(B[j])
+    return(res)
+}
+ResR=fooR(A, B, 10)
+ResR
+sizes = seq(10, 1000, length = 10)
+Rtime = rep(0, 10)
+Ctime = Rtime 
+i = 1
+for (n in sizes) {
+    A = seq(0, 1,length = n)
+    B = seq(0, 1,length = n)
+    C = rep(0, times = n)
+    Ctime[i] = system.time(.C("fooC", A, B, as.integer(n), C))
+    Rtime[i] = system.time(fooR(A, B, n))
+    i = i+1
+}
+DF = stack(list(C = Ctime, R = Rtime))
+names(DF) = c("system.time", "language")
+DF$size = sizes
+# plot run time as a function of array size for R and 
+# .C implementations
+qplot(x = size,
+      y = system.time,
+      lty = language, 
+	  color = language, 
+      data = DF,
+      size = I(1.5), 
+	  geom = "line", 
+      xlab = "array size", 
+	  ylab = "computation time (sec)")
+@
+
+The \texttt{.Call} external interface offers a higher degree of flexibility than \texttt{.C} in terms of passing and returning R arrays or dataframes. The example below shows how to use \texttt{.Call} to implement the same functionality as the \texttt{.C} example above. The type \texttt{SEXP} represents an R object. The \texttt{REAL} macro returns a pointer to the corresponding memory for reading or writing to it. A simple example appears below.
+
+<<engine="Rcpp",eval=FALSE>>=
+#include <R.h>
+#include <Rinternals.h>
+#include <Rmath.h>
+#include <math.h>
+SEXP fooC2(SEXP aR, SEXP  bR)
+{ 
+  int i, j, n = length(aR);
+  double *a = REAL(aR), *b = REAL(bR);
+  SEXP Rval = allocVector(REALSXP, n); 
+  for (i = 0; i < n; i++) {
+    REAL(Rval)[i] = 0;
+    for (j = 0; j < n; j++)
+      REAL(Rval)[i] += pow(a[j] + i + 1, b[j]);
+  }
+  return Rval;
+}
+@
+
+\begin{verbatim}
+R CMD SHLIB fooC2.c
+\end{verbatim}
+
+<<engine="Rcpp",eval=FALSE>>=
+dyn.load("fooC2.so")  # load the compiled C code
+A = seq(0, 1, length = 10)
+B = seq(0, 1, length = 10)
+.Call("fooC2", A, B)
+@
+
+%-------------------------------
+\section{Customization}
+
+When R starts it executes the function \texttt{.First} in the \texttt{.Rprofile} file in the user's home directory (if it exists). This is a good place to put user preferred options. Similarly, R executes the function \texttt{.Last} in the same file at the end of any R session. The function \texttt{options} adjust the behavior of R in many ways, for example to include more digits when displaying the value of a numeric variable.
+
+Below are two very simple \texttt{.First} and \texttt{.Last} functions.
+
+<<eval=FALSE>>=
+.First = function() {
+    options(prompt = 'R >', digits = 6)
+    library('ggplot2')
+}
+.Last = function() {
+    cat(date(), 'Bye')
+}
+@
+
+In Linux or Mac, we can execute R with flags; for example,  \texttt{R -q} starts R without printing the initial welcome message.
+
+%---------------------------------------------------------------------------------------
+\section{Notes}
+
+R programming books include free resources such as the official introduction to R manual \href{http://cran.r-project.org/doc/manuals/R-intro.html}{http://cran.r-project.org/doc/manuals/R-intro.html}
+(replace html with pdf for pdf version) and the language reference \href{http://cran.r-project.org/doc/manuals/R-lang.html}{http://cran.r-project.org/ doc/manuals/R-lang.html} (replace html with pdf for pdf version). Additional manuals on writing R extensions, importing data, and other topics are available at
+\href{http://cran.r-project.org/doc/manuals/}{http://cran.r-project.org/doc/manuals/}. Many additional books are available via commercial publishers.
+
+R packages are available from \href{http://cran.r-project.org}{http://cran.r-project.org}. Each package features a manual in a common documentation format; many packages feature  additional tutorial documents known as vignettes. Navigating the increasing repository of packages can be overwhelming. The Task Views help to aggregate lists of packages within a particular task or area. The list of Task Views is available at \href{http://cran.r-project.org/web/views/}{http://cran.r-project.org/web/views/}. Another useful tool is \href{http://crantastic.org}{http://crantastic.org} which shows recently contributed or updated packages, user reviews, and ratings. Finally, the freely available R-Journal at \href{http://journal.r-project.org/}{http://journal.r-project.org/} contains high quality refereed articles on the R language, including many descriptions of contributed packages.
+
+The Writing R Extensions manual (\href{http://cran.r-project.org/doc/manuals/R-exts.pdf}{http://cran.r-project.org/doc/manuals/R-exts.pdf}) contains more information on the \texttt{.C} and \texttt{.Call} external interfaces. The \text{Rcpp} package offers a higher degree of flexibility for interfacing C++ code and enables using numeric C++ libraries such as GSL, Eigen, and Armadillo.
+
+
+\section{Exercises}
+
+\begin{enumerate}
+\item Type the R code in this chapter into an R session and observe the results.
+\item Implement a function that computes the log of the factorial value of an integer using a for loop. Note that implementing it using $\log(A)+\log(B)+\cdots$ avoids overflow while implementing it as $\log(A\cdot B\cdot \cdots)$ creates an overflow early on.
+\item Implement a function that computes the log of the factorial value of an integer using recursion.
+\item Using your two implementations of log-factorial in (2) and (3) above, compute the sum of the log-factorials of the integers $1,2,\ldots,N$ for various $N$ values.
+\item Compare the execution times of your two implementations for (4) with an implementation based on the official R function \texttt{lfactorial(n)}. You may use the function \texttt{system.time()} to measure execution time. What are the growth rates of the three implementations as $N$ increases? Use the command \texttt{options(expressions=500000)} to increase the number of nested recursions allowed. Compare the timing of the recursion implementation as much as possible, and continue beyond that for the other two implementations.
+\end{enumerate}

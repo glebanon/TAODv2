@@ -1,0 +1,1103 @@
+\lstset{language=bash} \label{chap:os}
+
+This chapter describes the concept of an operating system in abstract setting, and then describes the Linux operating system in some detail as a concrete example.
+
+\section{Overview}
+
+In the previous chapter, we discussed the CPU, and how it executes a sequence of assembly language instructions. This suggests the following model: a programmer writes a computer program as a sequence of assembly language instructions, loads them into memory, and instructs the CPU to execute them one by one by pointing the program counter at the relevant memory address.
+
+Unfortunately, there are many problems with this scheme: only one program can run at any particular time, one programmer may overwrite information important for another programmer, and it is hard to reuse instructions implementing common tasks. The operating system mediates between the computer hardware and programmers, and resolves difficulties such as the ones mentioned above.
+
+The main roles of the operating system (OS) are to
+\begin{enumerate}
+\item manage concurrent execution of multiple processes,
+\item manage presence of multiple programmers and multiple users,
+\item manage disk storage using the file system,
+\item manage memory allocation and access,
+\item facilitate access to input and output devices,
+\item protect against malicious or careless acts,
+\item provide tools for reusing software in multiple programs,  and
+\item provide applications that help users accomplish many important tasks.
+\end{enumerate}
+
+Throughout this chapter we use the Linux operating system to illustrate operating system concepts. Linux gives the programmer more tools and flexibility than Windows does and is therefore better suited to support programming. Most Linux commands and examples also work on the Apple's Mac operating system.
+
+\section{The Kernel, Traps, and System Calls}
+
+The operating system is a collection of individual programs, each consisting of a sequence of assembly language instructions as described in Chapter~\ref{chap:hardware}. The kernel is the most important OS program, running from the time the computer is powered on and until the computer is powered off.
+
+As the CPU executes the kernel program, it alternates between the following two modes.
+\begin{description}
+	\item[System Mode.] The CPU executes the kernel program.
+	\item[User Mode.] The CPU executes a non-kernel program.
+\end{description} 
+When the computer is powered on, the CPU assumes the system mode and the kernel program initializes the operating system. Once the kernel completes its initialization tasks, the CPU assumes the user mode and execution is transferred to a non-kernel program by resetting the program counter (see Definition~\ref{def:hardware:pc}) appropriately.
+
+There are two ways to transfer control from user mode back to kernel mode.
+\begin{description}
+\item[System Call.] The non-kernel program issues a system call, requesting the operating system to provide a specific service.
+\item[Counter.] Expiration of a timer that was reset when the CPU last assumed the user mode.
+\end{description}
+
+In the first case above, as a result of the system call the kernel mode resumes execution, handles the system call, and then returns execution back to the user program. In the second case above, the expiration of the timer causes the kernel mode to resumes operation after which execution is transferred to a different program (with a reset timer). The previous program that was executing whenever the timer expired is suspended until its turn arrives again.
+
+As described in Chapter~\ref{chap:hardware}, at any single moment the CPU executes a single instruction, but the operating system kernel enables the concurrent execution of multiple programs, called processes.
+
+\begin{defn} \label{def:os:process}
+A process is a program, or a sequence of assembly language instructions, running in user mode concurrently with the kernel\footnote{Some definitions also consider the kernel as a process.}. 
+\end{defn}
+
+Figure~\ref{fig:os:modes} shows an example of transitioning between the kernel mode and user mode. The kernel starts executing when the computer boots up, and then transfers execution to process 1. Part A of process 1 ends with a system call, transferring execution back to the kernel mode. The kernel handles the system call and returns execution to the same process. After a while, the timer expires, suspending process 1 and entering kernel mode. The kernel resets the timer and re-enters user mode, giving the next process a turn.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{pdf/modes}
+\caption{An example of transitions between the kernel mode and user modes. The kernel starts executing when the computer boots up, and then transfers execution to process 1. Part A ends with a system call which transfers execution back to the kernel. The kernel handles the system call and returns execution to process 1. When the timer expires, control is returned to the kernel, which gives process 2 a turn. } \label{fig:os:modes}
+\end{figure}
+
+The mechanism by which system calls transfer execution from user mode to kernel mode is called a trap. A trap is similar to interrupts (see Chapter~\ref{chap:hardware}) in that both traps and interrupts transfer execution to a separate program (event handler in the case of interrupts, and kernel mode in the case of traps). An important difference is that interrupts are implemented in the CPU (hardware), while traps are implemented in the operating system kernel (software).
+
+Some examples of popular system calls appear below. The precise set of system calls and their format depends on the operating system.
+
+\begin{itemize}
+\item Terminate the execution of the current program.
+\item Request the right to use a portion of the memory of a certain size.
+\item Inform the kernel that a portion of the memory that was allocated to the program is no longer needed.
+\item Read or write content to the hard disk.
+\item Write information to an output device, or read information from an input device. In this case the trap triggers a hardware interrupt as well.
+\end{itemize}
+
+\section{Windows, Linux, and Mac OS}
+
+The three most popular operating systems for desktops and laptops at the early 21st century are Microsoft Windows, Linux, and Mac OS.
+
+The Windows operating system is manufactured and sold by Microsoft, and is currently the most popular operating system for personal computers. It is intuitive and easy to use for users interested in running applications such as browsers, email clients, word processors, spreadsheets, and games.
+
+Linux is an operating system that is especially popular for high performance servers, cell phones, and embedded devices. Unlike Windows, Linux is freely available and is open source, implying that no single organization owns it or sells it. Instead, a diverse community of programmers implement, maintain, and improve it.
+
+There are multiple version of Linux, called distributions. The most  popular distribution is Ubuntu, which is available for free at \href{http://www.ubuntu.com}{http://www.ubuntu.com}. Linux is known for being less intuitive and harder to install and use than Windows. Despite this reputation, substantial progress has been made over the years and recent versions of the major Linux distributions are easy to install and use. Most Linux distributions feature graphic interfaces that are similar to Windows, for example Gnome (\href{http://www.gnome.org}{http://www.gnome.org}), KDE (\href{http://www.kde.org}{http://www.kde.org}), and Unity (\href{http://unity.ubuntu.com}{http://unity.ubuntu.com}).
+
+Besides being free, a major advantage of Linux over Windows is that it provides substantial flexibility for programmers and it includes a large variety of programming tools. This makes Linux a more convenient software development platform than Windows.
+
+Apple's Mac OS is similar to Linux in many ways, but it is not freely available. Most Linux commands and examples work on the Mac OS as well, though there are some exceptions. 
+
+In this chapter and in the rest of this book we illustrate computing concepts using the Linux operating systems. Most examples should work also on Mac OS, though some minor differences may occur. Windows users may elect to install cygwin (\href{http://www.cygwin.com}{http://www.cygwin.com}), a program that lets Windows emulate Linux capabilities. 
+
+\section{The Linux Terminal and Bash} \label{sec:os:bash}
+
+\subsection{Introduction}
+
+The Linux terminal is a text based application that lets users and programmers interact with different aspects of the operating system, including process management, file system, and user management. 
+
+The terminal may run in different modes, known as shells. Each shell has a different way of translating the user commands into operating system tasks. The default shell in most cases is the Bourne Again Shell (abbreviated bash). Zshell (abbreviated zsh), a alternative shell that has recently gained popularity, is compatible with bash but includes additional features. The examples in this chapter should work with either bash or zsh. 
+
+To start the Linux terminal program, launch the terminal or xterm application using the graphical interface. In some cases the Linux terminal appears right away, for example when logging-in to a remote server via the \texttt{ssh} program or when booting up a Linux computer without the graphic interface. To exit a terminal type \texttt{exit} at the terminal prompt and hit the return key or close the window of the terminal application.
+
+Each terminal line contains one or more commands, separated by semicolons. As the return key is pressed, the terminal executes the commands and displays the corresponding output. More specifically, as each command is executed, the shell matches it with an executable file in the file system (see Section~\ref{sec:os:files}), and executes the instruction sequence in that file.
+
+The bash shell ignores all characters between a \texttt{\#} symbol and the end of the line. This provides a useful way to annotate Linux commands with comments. The first Linux command we examine is \texttt{echo}, which displays its arguments followed by a newline character. For example, the following command displays the two arguments \texttt{hello} and \texttt{world} in the Linux terminal. Note how the comment following the \texttt{\#} character is ignored.
+
+<<engine="bash">>=
+# this is a comment
+# the prefix ## indicates the output printed by the terminal program
+# the echo command displays its arguments
+# three commands separated by a semi-colon
+echo hello world; echo hello; echo world 
+@
+
+Above and elsewhere we prefix the output of the terminal command by  \texttt{\#\#}. This facilitates copying the code above and pasting it into a terminal (the text following the  \texttt{\#\#} is ignored and thus may be included in the copy command).
+
+Many terminal commands accept one or more flags, indicated by a dash or two consecutive dashes followed by a text string. For example, the \texttt{-n} flag instructs \texttt{echo} to avoid printing a newline character at the end.
+
+<<engine="bash">>=
+echo hello; echo world; echo -n hello; echo -n world 
+@
+
+In some cases flags are followed by arguments. For example, the command below sends the file \texttt{foo.txt} to the printer named \texttt{printer101}. The string \texttt{foo.txt} is an argument of the command \texttt{lp} and the string \texttt{printer101} is an argument of the flag \texttt{-d} (printing and files will be described later on in this chapter). 
+
+<<engine="bash",eval=FALSE>>=
+lp -d printer101 foo.txt
+@
+
+In some cases the arguments of flags are optional. In this case, if the arguments are not supplied explicitly they assume default values.
+
+The commands \texttt{man} and \texttt{info} display detailed description of Linux commands. It is customary to denote in this description optional arguments using square brackets. To scroll up or down when viewing the \texttt{man} and \texttt{info} descriptions press the up or down arrow keys, and to quit the viewer type \texttt{q}.
+
+For example, the following commands display the \texttt{man} and \texttt{info} information for the \texttt{echo} command. We display below only the first few lines of the description pages.
+
+<<engine="bash",eval=FALSE>>=
+man lp
+
+## NAME
+##       lp - print files
+##
+## SYNOPSIS
+##       lp  [  -E ] [ -U username ] [ -c ] 
+## (truncated)
+@
+
+Flags typically have different meaning in different commands. But in some cases, flags preserve their meanings across multiple commands. Some examples of flags that preserve their meaning across multiple commands are listed below.
+
+\begin{center}
+  \begin{tabular}{|l|l|} \hline
+  flag & effect\\ \hline \hline
+\texttt{-} \!\!\!\! \texttt{-help} & display command description\\ \hline
+  \texttt{-} \!\!\!\! \texttt{-version} & display command version\\ \hline
+  \texttt{-h} & display file sizes in readable form, for example \texttt{581M} (megabytes) \\ & rather than \texttt{608624092} (bytes)\\ \hline
+\end{tabular}
+\end{center}
+
+The Linux example below demonstrate the \texttt{--version} flag across two different Linux command. 
+
+<<engine="bash",eval=FALSE>>=
+# usage of --version flag across multiple commands
+man --version
+## man 2.6.1
+ls --version
+## ls (GNU coreutils) 8.13
+@
+
+\subsection{Variables and Pipes} \label{sec:os:variables}
+
+To set a variable, we assign it a value with the assignment operator \texttt{=}. Most character strings are legal variable names, provided special characters such as \texttt{\$} or \texttt{\&} are avoided. Linux is case sensitive, and thus \texttt{apple} and \texttt{Apple} represent different variables. When the \texttt{\$} symbol prefixes a variable name, the value of the variable is referenced.
+
+<<engine="bash">>=
+a=3; echo a; echo $a
+@
+
+Environment variables, typically written with uppercase characters, are special variables that influence the behavior of the shell. For example, the \texttt{SHELL} variable holds the name of the shell that is currently active. 
+
+<<engine="bash", eval=FALSE>>=
+# type the active shell program
+echo $SHELL
+## /bin/bash
+@
+
+The command \texttt{export} modifies the value of an environment variable. The difference between it and the simpler assignment operator above is that \texttt{export} assigns a global variable, making it accessible to other active shells. The \texttt{printenv} command is useful for printing the values of all global environment variables, such as the shell and the user name.
+
+The following command modifies the value of the \texttt{PS1} global environment variable, which determines the appearance of the prompt. We assume below that the initial prompt is a \texttt{>} symbol. For more details on how to set \texttt{PS1} see the PROMPTING section of the \texttt{man bash} document or online documentation.
+
+<<engine="bash",eval=FALSE>>=
+> export PS1="% "
+% export PS1="$ "
+$ export PS1="\\u@\h \\W >"  # set prompt to user@host dir
+joe@myLaptop ~ > 
+@
+
+A Linux pipe, denoted by the character \texttt{|}, is used to separate a sequence of commands where the output of the first command becomes the input of the second command, the output of the second command becomes the input of the third command, and so on. 
+
+The following example shows a piped combination of the \texttt{echo} command, and the \texttt{wc} command, which prints the number of lines, words, and characters in its input (see \texttt{man wc} for more information and for a description of its optional flags).
+
+<<engine="bash">>=
+echo this is a sentence with ten words and 52 characters
+@
+
+<<engine="bash">>=
+# count lines, words, characters in the following sentence
+echo this is a sentence with ten words and 52 characters | wc
+@
+
+We can feed the output of the piped combination above to another \texttt{wc} command.
+
+<<engine="bash">>=
+echo this is a sentence with ten words and 52 characters| wc | wc
+@
+
+Appending additional \texttt{ | wc} at the end of the command above will not modify the displayed output. Do you see why that is the case?
+
+<<engine="bash">>=
+echo this is a sentence with ten words and 52 characters| wc | wc | wc
+@
+
+\subsection{Bash Programming} \label{sec:os:bashProg}
+
+The bash shell allows substituting a variable for a command, using the back quote symbol \texttt{`}. The command surrounded by back quotes is executed and its output is substituted in its place. The example below uses the command \texttt{seq}, which creates a string of numbers between its two arguments (type \texttt{man seq} for more details).
+
+<<engine="bash">>=
+seq 1 5
+@
+<<engine="bash">>=
+echo seq 1 5
+@
+<<engine="bash">>=
+echo `seq 1 5`
+@
+
+Bash shell supports three types of loops: for loops, while loops, and until loops.
+
+For loops set a variable in each iteration to a different word within a string containing multiple words. The number of iteration is equal to the number of words in the corresponding text string. The \texttt{for} statement is followed by a semicolon and then \texttt{do} followed by a potential command or command sequence. Another semicolon and the \texttt{done} keyword mark the end of the loop.
+
+<<engine="bash">>=
+for i in `seq 1 5`;  do echo the current number is $i; done
+@
+
+Parentheses start a new sub-shell, execute the commands inside the parentheses, and return to the original shell with the corresponding output. 
+
+<<engine="bash">>=
+for i in `seq 1 5`;  do (echo the current number is $i| wc); done
+@
+
+While loops iterate until the condition specified inside square brackets is achieved. In the example below, we use the command \texttt{let} for performing arithmetic on shell variables and use \texttt{-lt} to refer to the logical less-than condition. See Figure~\ref{fig:os:logical} for bash keywords corresponding to other standard logical operators. These keywords are needed since the symbols \texttt{<} and \texttt{>} are reserved in Linux for input and output redirection (see Section~\ref{sec:os:io}).
+
+\begin{figure} \centering
+  \begin{tabular}{|l|c|c|}\hline bash & C/C++/R & math notation\\ \hline \hline
+\texttt{-lt} &  \texttt{<} & 	$<$\\ \hline
+\texttt{-gt} &	\texttt{>} &	$>$\\ \hline
+\texttt{-le} &	\texttt{<=} &	$\leq$\\ \hline
+\texttt{-ge} &	\texttt{>=} &	$\geq$\\ \hline
+\texttt{-eq} &	\texttt{==} &	 $=$\\ \hline
+\texttt{-ne} &	\texttt{!=} &	$\neq$ \\ \hline
+\end{tabular}
+\caption{Logical conditions in Linux, C/C++/R, and mathematical notation.} \label{fig:os:logical}
+\end{figure}
+
+<<engine="bash">>=
+i=0; while [ $i -lt 5 ]; do  echo $i; let i=i+1; done
+@
+
+Until loops are similar to while loops, but they iterate until the corresponding condition is achieved.
+
+<<engine="bash">>=
+i=0; until [ $i -ge 5 ]; do echo $i; let i=i+1; done
+@
+
+The \texttt{if} statement executes the sequence of commands between the \texttt{if} and \texttt{fi} keywords if the \texttt{if} condition holds. An optional \texttt{else} keyword prefixes a command that executes if the condition does not hold.
+
+<<engine="bash">>=
+a=4 ; b=3 ; if [ $a -eq $b ] ; then echo 1 ; else echo 0 ; fi
+@
+
+
+Brace expansion is a useful mechanism for generating a collection of strings with a specific pattern.  The brace  \texttt{\{X,Y\}} expands to \texttt{X} and to \texttt{Y} and the brace   \texttt{\{X..Y\}} expands to all characters in between \texttt{X} and \texttt{Y}.
+
+<<engine="bash">>=
+echo {b,c}; echo a{b,c}d; echo a{a..m}d
+@
+
+
+The shell records the executed commands for future recall. This is convenient when typing long commands containing a typo that need to be fixed, or for repeated execution of common commands. The \texttt{history} command displays all recorded commands, sorted in chronological order. An optional numeric argument \texttt{k} shows only the \texttt{k} most recent commands. Most terminals support navigating through the command history using the up-arrow and down-arrow keys. More specifically, an up-arrow keystroke brings up the most recent command. Another up-arrow keystroke brings up the second most recent command, and so on.
+
+The exclamation mark \texttt{!} is a convenient way to recall the most recent command starting with a certain prefix. For example \texttt{!ec} re-executes the last command that started with the phrase \texttt{ec}.
+
+Another useful way to search through the command history is the key combination CONTROL-r followed by a string. This brings up the most recent command matching the specific string as a sub-string (not necessarily a prefix substring). In contrast to the exclamation mark technique mentioned above, the CONTROL-r key combination lets the user modify the recalled command before it is executed.
+
+A convenient way to abbreviate long commands is by defining an alias using the command \texttt{alias X=Y}. In this case, whenever the command \texttt{X} is executed, the shell substitutes it with the command \texttt{Y}. Prefixing a string with a backslash escapes any existing aliases and executes the typed command as is. The command \texttt{unalias} removes an alias. 
+
+<<engine="bash",eval=FALSE>>=
+date
+## Mon Feb  6 15:50:34 EST 2015
+alias date="date -u"  # modify format with optional flag -u
+date     # alias in effect
+## Mon Feb  6 20:52:39 UTC 2015
+\date    # escape alias, original command in effect
+## Mon Feb  6 15:52:52 EST 2015
+unalias date  # remove alias
+date
+## Mon Feb  6 15:53:47 EST 2015
+@
+
+\section{Process Management}
+
+A single core CPU can only execute a single instruction at any specific time (see Chapter~\ref{chap:hardware}). The alternation between kernel and user modes lets multiple processes run concurrently (see Figure~\ref{fig:os:modes}). This applies to both interactive programs that wait for user response, such as word processors, pdf viewers, and web browsers, and to non-interactive programs. Running multiple processes concurrently is also useful when the hardware is truly parallel. For example, a computer with $l$ cores can run $k$ processes concurrently even when $k>l$. As a result, concurrent processes may or may not run in parallel. 
+
+\begin{defn} The process of transferring execution between one process and another is called a context switch.
+\end{defn}
+
+\begin{defn} The OS scheduling strategy determines when to perform a context switch, and what process to select next for execution.
+\end{defn} 
+	
+A good scheduling strategy should (a) ensure that the CPU or CPU cores are not frequently idle (load balancing), and (b) each process gets an appropriate share of the CPU time. One popular scheduling strategy is round-robin, where each process gets a turn, followed by the next process, and so on. After all processes get their turn, the first process gets another turn, followed by the second process, and so on. Scheduling strategies become more complex when there are multiple cores or processors.
+
+In some cases it is desirable to give some processes priority over other processes. In this case processes with higher priority receive more CPU time than processes with lower priority. For example, it is customary to lower the priority of a computationally intensive process so that concurrent interactive processes (such as a terminal or a web browser) will receive sufficient CPU time to ensure a smooth interactive user experience.  
+
+\subsection{Processes and Jobs in Linux}
+
+Interacting with the Linux terminal may launch a single process, or multiple processes, for example when we have multiple commands separated by pipes.
+
+\begin{defn}
+A job is a group of processes (Definition~\ref{def:os:process}) responsible for executing one or more terminal commands connected by pipes.
+\end{defn}
+
+\begin{defn}
+A job may run in the foreground, interacting with the user through the terminal, or in the background where it does not interact with the user through the terminal.
+\end{defn}
+
+For any terminal window, only a single job can run in the foreground, but  multiple jobs can run in the background concurrently.
+
+Terminal commands are executed by default in the foreground. The corresponding job interacts with the user by displaying output to the terminal or by reading input from the user keyboard. In particular, the shell waits for the job to finish before it displays another prompt and allows the user to launch a new command.
+
+Appending the \texttt{\&} symbol at end of a command executes the corresponding job in the background. In this case, the shell immediately displays a new prompt, allowing the user to execute new commands concurrently with the background job. Subsequent commands appended by the \texttt{\&} symbol will run in the background as well (there can be multiple jobs running in the background). 
+
+The CONTROL-z keystroke suspends the foreground job and displays a terminal prompt, allowing the user to launch new commands in the prompt. The command \texttt{bg} followed by the job number resumes execution of a suspended job in the background (if only one suspended job exists the job number may be omitted) and the command \texttt{fg} resumes execution of a suspended job in the foreground. The keystroke combination CONTROL-c stops the foreground job without the possibility of resuming it later. The Linux commands \texttt{jobs} and \texttt{ps} display the current jobs and processes respectively. 
+
+The table below shows some common flags and other related commands.
+
+\begin{center} 
+\begin{tabular}{|l|l|}\hline
+command & effect \\ \hline \hline
+\texttt{jobs} & displays jobs launched by current user in current terminal \\ \hline
+\texttt{ps} & displays active processes launched by the current user,\\
+& listing process ID, terminal name, CPU time thus far, \\ & and the command that launched the process\\ \hline
+\texttt{ps -u} & same as \texttt{ps}, but adds process memory usage, the date the process \\ &  started, and the user that launched the process\\ \hline
+\texttt{ps -A} & same as \texttt{ps}, but includes all concurrent processes, including \\ & processes launched by other users and in other terminals\\ \hline
+\texttt{X \&} & launches the command \texttt{X} in the background\\ \hline
+\texttt{CONTROL-c} & stops current foreground job\\ \hline
+\texttt{CONTROL-z} & suspends current foreground job\\ \hline
+\texttt{fg X} & resumes job \texttt{X} in the foreground \\ &(argument not needed if there is only a single job)\\ \hline
+\texttt{bg X} & resumes job \texttt{X} in the background\\  & (argument not needed if there is only a single job)\\ \hline
+\texttt{kill X} & kills process \texttt{X} (using process ID) or job \texttt{X} (using \texttt{\%} symbol \\ &  followed by job ID)\\ \hline
+\end{tabular} 
+\end{center}
+
+The commands \texttt{tail} and \texttt{head} display the first and last 10 lines of its input, respectively (see Section~\ref{sec:os:files} for more detail). In the following example, we use the command \texttt{tail -f} that displays the last ten lines and waits indefinitely for additional data to be appended.
+
+<<engine="bash",eval=FALSE>>=
+touch a.txt; touch b.txt  # create two empty files
+tail -f a.txt &  # launch a never-ending background job
+jobs  # display current jobs
+
+## [1]+  Running                 tail -f a.txt &
+
+ps  # display current processes launched by current user
+
+##   PID TTY           TIME CMD
+## 11185 ttys005    0:00.00 tail -f a.txt
+
+ps -A | head -n 7 # display all running processes (first 7 lines)
+
+##   PID TTY           TIME CMD
+##     1 ??         0:10.84 /sbin/launchd
+##    10 ??         0:00.79 /usr/libexec/kextd
+##    11 ??         0:00.50 /usr/libexec/UserEventAgent -l System
+##    12 ??         0:00.94 /usr/sbin/notifyd
+##    13 ??         0:00.19 /usr/sbin/diskarbitrationd
+##    14 ??         0:04.37 /usr/libexec/configd
+
+tail -f b.txt &  # launch another never-ending background job
+jobs  # displays current jobs
+
+## [1]-  Running                 tail -f a.txt &
+## [2]+  Running                 tail -f b.txt &
+
+kill %1  # kill job 1
+jobs
+
+## [1]-  Terminated: 15          tail -f a.txt
+## [2]+  Running                 tail -f b.txt &
+
+jobs
+
+## [2]+  Running                 tail -f b.txt &
+
+fg  # bring the single current job into foreground
+
+[CONTROL-z keystroke suspends foreground job and creates a new prompt]
+
+jobs  # job was suspended by CONTROL-Z keystroke
+
+## [2]+  Stopped                 tail -f b.txt
+
+bg  # resume single current job in the background
+jobs
+
+## [2]+  Running                 tail -f b.txt &
+@
+
+The following example starts multiple processes that simply wait for 100 seconds, first in the foreground and then in the background. In the first case the processes run sequentially: the second process starts after the first process finishes, the third process starts after the second process finishes, and so on. 
+
+<<engine="bash",eval=FALSE>>=
+# run five jobs sequentially in the foreground
+for i in `seq 1 5`; do  (sleep 100) ; done ;
+
+[ hitting CTRL-Z to suspend the job ]
+
+jobs
+
+## [1]+  Stopped                 ( sleep 100 )
+
+bg  # resume process in the background
+jobs
+
+## [1]+  Running                 ( sleep 100 ) &
+
+ps  # shows single active process
+
+##   PID TTY           TIME CMD
+## 57140 ttys004    0:00.00 sleep 100
+@
+
+In the example below, the processes run concurrently in the background.
+
+<<engine="bash",eval=FALSE>>=
+# run 5 processes in the background concurrently
+for i in `seq 1 5` ; do  (sleep 100 &) ; done ;
+ps
+
+##   PID TTY           TIME CMD
+## 57148 ttys004    0:00.00 sleep 100
+## 57150 ttys004    0:00.00 sleep 100
+## 57152 ttys004    0:00.00 sleep 100
+## 57154 ttys004    0:00.00 sleep 100
+## 57156 ttys004    0:00.00 sleep 100
+
+kill 57148  # kill the first process
+
+ps
+
+##   PID TTY           TIME CMD
+## 57150 ttys004    0:00.00 sleep 100
+## 57152 ttys004    0:00.00 sleep 100
+## 57154 ttys004    0:00.00 sleep 100
+## 57156 ttys004    0:00.00 sleep 100
+@
+
+The \texttt{top} command displays properties of the process that are currently running concurrently. The properties include the user who initiated the process, the process run-time, and the process priority. Unintuitively, lower priority numbers in Linux correspond to higher priorities or higher shares of CPU time. Typing \texttt{q} exists the \texttt{top} viewer. The command \texttt{htop} is an alternative that displays more detailed information  (\texttt{htop} may not be installed by default, in which case it needs to be manually installed, for example using \texttt{sudo apt-get install htop} on Ubuntu Linux).
+
+In the example below, there are four Java processes running in parallel on a computer system with 8 cores. They each were launched by the user \texttt{joe} (second column), have a priority 20 (third column), and use 100\% of a CPU core (ninth column) and about 1\% of the memory (tenth column).
+
+<<engine="bash",eval=FALSE>>=
+top
+
+## Tasks: 195 total,   2 running, 193 sleeping,   0 stopped,  
+## Cpu(s): 69.4%us,  0.3%sy,  0.0%ni, 30.3%id,  0.0%wa,  0.0%hi
+## Mem:  99197580k total, 92876600k used,  6320980k free,  
+## Swap: 100652028k total,    19548k used, 100632480k free
+##
+##   PID USER PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+## 26323 joe  20   0 24.2g 1.2g 9396 S  100  1.3   3546:44 java
+## 31696 joe  20   0 24.2g 1.3g 9392 S  100  1.4 874:38.32 java
+## 29854 joe  20   0 24.2g 971m 9408 S  100  1.0   1962:39 java
+## 29419 joe  20   0 24.2g 992m 9396 S  100  1.0   2204:30 java
+@
+
+The \texttt{nice -n k X} command launches the command \texttt{X} with a niceness value of \texttt{k}, which is added to the default process priority number of 20. The higher the value of \texttt{k}, the less CPU time the process is allocated. Using positive \texttt{k} values makes the new process ``nicer'' than default processes, implying that it will receive a smaller share of the CPU resources. Using negative \texttt{k} values makes the new process less ``nice'', implying that it will receive a larger share of the CPU resources. The \texttt{renice -n k X} command modifies the priority of an existing process with process-id \texttt{X} by adding to its priority the niceness value \texttt{k}. Typically, only a superuser can assign negative values of \texttt{k} (see Section~\ref{sec:os:users} for more information on super-users). 
+
+\begin{center} \begin{tabular}{|l|l|}\hline
+command & effect \\ \hline \hline
+\texttt{top} & displays currently running processes, annotated by  \\ &their CPU, memory usage, and user who launched them\\ & (type \texttt{q} to quit viewer)\\ \hline
+\texttt{htop} & more detailed variation of \texttt{top}\\ \hline
+\texttt{nice -n k X} & executes  command \texttt{X} with modifier \texttt{k} added to its priority\\ \hline
+\texttt{sudo nice -n k X} & executes command \texttt{X} with potentially negative modifier \texttt{k}\\ & added to its priority (super-users only)\\ \hline
+\texttt{renice -n k X} & modifies the niceness modifier of an existing process with \\ & process ID \texttt{X} to \texttt{k} \\ \hline
+\end{tabular}
+\end{center}
+
+
+\section{Memory Management and Virtual Memory}
+
+It is inappropriate for processes to read from or write to arbitrary physical RAM addresses. A few reasons are listed below.
+
+\begin{itemize}
+\item A process may inadvertently overwrite its own instructions or the OS kernel program.
+\item Two processes running concurrently may inadvertently access the same physical memory addresses, overwriting each other's information.
+\item A malicious process may access restricted information and take control of the computer.
+\end{itemize}
+
+The operating system mediates between the processes and the RAM by defining a separate address range for each process, known as virtual memory, that the process can safely read from or write to. The OS ensures that virtual memory allocated to different processes are mapped to disjoint parts of the physical RAM, and that these parts do not overlap with areas of the RAM holding the operating system code or other critical information. 
+
+Often, the virtual memory address ranges are mapped to the hard disk, as well as to RAM. Since disk space is much larger than RAM, this lets the operating system allocate more virtual memory for each process. 
+
+A significant difficulty associated with mapping virtual memory to the disk is that disk access is much slower than RAM access (see Chapter~\ref{chap:hardware}) and a careless allocation policy can considerably slow down the processes. A partial solution is similar to the cache mechanism described in Chapter~\ref{chap:hardware}: frequently accessed virtual memory is mapped to RAM and infrequently accessed virtual memory is mapped to disk. Figure~\ref{fig:os:virtualMemory1} illustrates this strategy, where contiguous chunks of virtual memory, called pages, are mapped to physical storage in RAM or disk (shaded) depending on their access frequency. If a virtual memory page that is stored only in disk is accessed, the operating system brings it to RAM, potentially overwriting another virtual memory page in RAM that will subsequentially reside only in the disk. 
+
+Due to the principles of spatial and temporal locality (see Section~\ref{sec:hardware:memory}), this scheme allows processes to gain access to a large range of virtual memory, with relatively little slowdown. There is substantial similarity between virtual memory and the cache mechanism described in Section~\ref{sec:hardware:memory}. One important difference, however, is that while cache is implemented in hardware by the CPU, the virtual memory is implemented in software by the operating system.
+
+\begin{figure}\centering
+\includegraphics[scale=0.5]{pdf/virtualMemory1}
+\caption{The virtual address memory ranges of two processes is mapped to RAM or disk where it is physically stored. In this example, pages 1 and 3 are frequently accessed and are stored in RAM as well as disk, while page 2 is currently stored only in disk. When the virtual memory in page 2 is accessed, the OS kernel brings the page to RAM, potentially overwriting one of the less frequently accessed virtual memory pages in RAM and making that page reside only in disk.} \label{fig:os:virtualMemory1}
+\end{figure}
+
+\section{The File System} \label{sec:os:files}
+
+The operating system provides an interface between processes and the disk, called the file system. The file system maps physical addresses on the disk to logical units called files that the operating system and its processes access. The interface lets the OS ensure that two concurrent processes do not write to the same file at the same time, and that processes can only access files they are permitted to. In contrast to virtual memory, files persist after the computer is turned off, and reside exclusively on disk.
+
+There are many types of files, but the two most fundamental file types are text and binary. Text files contain strings of characters, usually in ASCII encoding (see Chapter~\ref{chap:hardware}). Binary files contain executable programs in the form of sequences of bits corresponding to assembly language instructions. Other types of files such as media files (images, videos, music) and files storing data (in non-ASCII encoding) are usually categorized as binary as well.
+
+Files have three basic properties: size, name, and path. The size of the file is the length of the corresponding byte sequence (or bit sequence divided by 8) on the disk. The file name is a character sequence, excluding special characters such as \$ or \&. File names are case sensitive in Linux and Mac OS and case insensitive in Windows. In many cases, a file name may contains one or more periods, acting as separators between the base file name and file name extensions. File name extensions often denote the type of data the file holds. For example, the extensions \texttt{X.txt}, \texttt{X.jpeg}, \texttt{X.mp3} (\texttt{X} stands here for the base file name), correspond to text, JPEG compression for images, and MPEG compression for audio respectively. Files whose names start with a period are called hidden files.
+
+The operating system offers a convenient mechanism to organize files into groups called directories. Directories are further organized in a hierarchy, where each directory may contain additional directories within it, called sub-directories. A directory containing files or sub-directories is called the parent directory of its files and sub-directories. Thus, every file and directory has one parent directory (unless it is the initial or top-most directory) and may have zero, one, or more sub-directories. 
+
+The absolute path associated with a directory is the sequence of directories leading to it starting from the top-most directory, separated by the \texttt{/} character. The absolute path associated with a file is the path leading to its parent directory followed by the file name. For example, the path \texttt{/a} denotes a file or directory called \texttt{a} that reside in the top-most directory. The path \texttt{/a/b} denotes a file or directory \texttt{b} that resides in the directory whose absolute path is \texttt{/a}. 
+
+A relative path to a target file or directory is the sequence of directories (separated by \texttt{/}) connecting the current directory to the target file or directory. Thus, if the current directory is \texttt{/a/b/c}, the relative path \texttt{d/e} refers to a directory or file whose absolute path is \texttt{/a/b/c/d/e}.
+
+The directory hierarchy usually indicates a structure of specificity: directories represent a common theme and sub-directories within them represent further specialized themes within the theme of the parent directory. Two files or directories with identical names may not reside in the same directory, but may reside in different directories. As a result, absolute paths uniquely identify files and directories in the file system, which are mapped by the OS to specific physical addresses on the disk.
+
+\subsection{Files in Linux}
+
+\subsubsection{The Linux Hierarchy of Directories}
+
+Figure~\ref{fig:os:dirs} shows the standard hierarchy of directories in Linux, annotated with the traditional roles of the different directories (The Mac OS directory hierarchy is slightly different). The directory \texttt{/home} typically holds user home directories, each specified by the corresponding user name. For example \texttt{/home/joe} is the home directory of user \texttt{joe} and \texttt{/home/jane} is the home directory of user \texttt{jane}. In many cases, users store their files in their home directory (or its subdirectories), leaving the rest of the file system hierarchy for the operating system and for applications.
+
+At any specific moment, the Linux terminal is associated with a specific directory, called the current directory. The Linux command \texttt{pwd} displays the absolute path of the current directory. The Linux command \texttt{cd} followed by an absolute or relative path switches the current directory to a new corresponding directory.
+
+\begin{figure} \centering
+\includegraphics[angle=90,scale=0.35]{pdf/dirs}
+\caption{Standard directory structure for Linux systems.} \label{fig:os:dirs}
+\end{figure}
+
+The table below displays useful path abbreviations in Linux.
+
+\begin{center}
+\begin{tabular}{|l|l|}\hline
+symbol & expansion \\ \hline \hline
+$\sim$ & home directory of current user\\ \hline
+\texttt{.} & current directory\\ \hline
+\texttt{..} & parent directory of current directory\\ \hline
+$\sim$\texttt{X} & home directory of user \texttt{X}\\ \hline
+\end{tabular}
+\end{center}
+
+The following command sequence assumes the directory structure of Figure~\ref{fig:os:dirs}.
+
+<<engine="bash",eval=FALSE>>=
+cd /  # change current directory to top-most directory
+pwd  # display current path
+
+## /
+
+cd /home  # change directory using absolute path
+pwd  # display current path
+
+## /home
+
+cd joe  # change directory using relative path
+pwd  # display current path
+
+## /home/joe
+
+cd ../jane  # change directory using relative path
+pwd  # display current path
+
+## /home/jane
+@
+
+Two convenient commands for examining the directory structure are \texttt{df} and \texttt{du}. The command \texttt{df -h} displays the size of the disk drive, the amount of used space, and the amount of available space. Multiple disk partitions or multiple disk drives are displayed in separate rows. The command \texttt{du -sh X} displays in human readable form the size of the directory \texttt{X} (including its sub-directories).
+
+<<engine="bash",eval=FALSE>>=
+# display the size of the disk drive and amount of used and 
+# available space using abbreviations such as Gi for Gigabyte
+df -h  
+
+## Filesystem     Size   Used  Avail Capacity  Mounted on
+## /dev/disk0s2  233Gi  140Gi   93Gi    61%    /
+
+# display size (21 GB) of directory /home/joe/sw (absolute path)
+du -sh ~joe/sw  
+
+## 21G	/home/joe/sw
+@
+
+\subsubsection{Displaying Files}
+
+The following commands are useful for displaying or examining file contents.
+
+\begin{center}
+\begin{tabular}{|l|l|} \hline
+  command & effect \\ \hline \hline
+\texttt{cat X} & displays contents of file \texttt{X}\\ \hline
+\texttt{less X} & file viewer (scroll with arrow keys, quit with \texttt{q})\\ \hline
+\texttt{head -n k X} & displays the first \texttt{k} lines of the file \texttt{X}\\ \hline
+\texttt{tail -n k X} & displays the last \texttt{k} lines of the file \texttt{X}\\ \hline
+\texttt{sort X} & displays the file \texttt{X} with sorted lines\\ \hline
+\texttt{uniq X} & displays the file \texttt{X} excluding duplicated lines\\ \hline
+\texttt{diff X Y} & matches similar files \texttt{X}, \texttt{Y} and displays unmatched lines\\ \hline
+\texttt{diff -u X Y} & matches similar files \texttt{X}, \texttt{Y} and displays for each line \\ & whether it is in \texttt{X}, in \texttt{Y} or in both\\ \hline
+\texttt{grep Y X} & displays all lines of file \texttt{X} containing the pattern \texttt{Y}\\ \hline
+\texttt{grep -w Y X} & same as \texttt{grep} but match entire words only \\ \hline
+\end{tabular}
+\end{center}
+
+The example below examines the contents of the log file \texttt{/var/log/syslog.1}, containing system messages in different lines. Recall that the command \texttt{wc} displays the number of lines, words, and characters (see Section~\ref{sec:os:bash}).
+
+<<engine="bash",eval=FALSE>>=
+head -1 /var/log/syslog.1  # first line
+
+## Feb  5 08:01:24 chance rsyslogd: [origin software="rsyslogd"
+
+tail -1 /var/log/syslog.1  # last line
+
+## Feb  6 07:35:01 chance anacron[7614]: Updated timestamp for
+
+# count number of messages (first column of wc output is number of lines)
+wc /var/log/syslog.1
+
+## 82  2202 15058 /var/log/syslog.1
+
+# count number of messages on Feb 6
+grep "Feb  6" /var/log/syslog.1 | wc 
+
+##      30     750    5092
+
+cat /var/log/syslog.1 | grep "Feb  6" | wc # same as above
+
+##      30     750    5092
+@
+
+\subsubsection{Moving, Copying, and Removing Files and Directories}
+
+The following commands are useful for moving, copying, and removing files and directories.
+
+\begin{center}
+\begin{tabular}{|l|l|}\hline
+command & effect\\ \hline \hline
+\texttt{rm X} & removes the file \texttt{X}\\ \hline
+\texttt{rm -R X} & removes a non-empty directory \texttt{X} with all its contents\\ \hline
+\texttt{rmdir X} & removes the empty directory \texttt{X}\\ \hline
+\texttt{mkdir X} & creates a new empty directory \texttt{X}\\ \hline
+\texttt{mkdir -p X/Y/Z} & creates a new sequence of nested directories\\ \hline
+\texttt{mv X Y} & moves a file or directory \texttt{X} to \texttt{Y}\\ \hline
+\texttt{cp X Y} & copies a file \texttt{X} to directory \texttt{Y}\\ \hline
+\texttt{cp -R X Y} & copies a directory \texttt{X} (with all its contents) to directory \texttt{Y}\\ \hline
+\end{tabular}
+\end{center}
+
+The flag \texttt{-R} in the table above indicates that the command applies to a directory recursively, potentially copying or removing all subdirectories and their contents. The \texttt{-R} flag should be used with care, as it is easy to accidentally remove or overwrite a major portion of the directory structure. The flag \texttt{-i} prompts the user for verification when removing or overwriting existing files. In some cases the commands \texttt{cp -i}, \texttt{mv -i}, and \texttt{rm -i}  have the aliases \texttt{cp}, \texttt{mv}, and \texttt{rm} so that using \texttt{cp}, \texttt{mv}, or \texttt{rm} requires confirmation when removing or overwriting existing files. The original behavior that does not require confirmation can be retrieved by removing the aliases using the \texttt{unalias} command or by prepending the command with a backslash character.
+
+<<engine="bash",eval=FALSE>>=
+# copy file1 in current dir to file2 in current dir
+cp file1 file2  
+# copy file1 in /tmp to file2 in ~
+cp /tmp/file1 ~/file2  
+# rename file1 as file2 in current dir
+mv file1 file2  
+# move file1 in /tmp to file2 in ~
+mv /tmp/file1 ~/file2  
+# remove file2 in home dir
+rm ~/file2  
+# removes directory tmpFiles and all its contents
+rm -R ~/tmpFiles 
+# same as above but avoids calling an aliased version of rm
+\rm -R ~/tmpFiles
+@
+
+\subsubsection{Wild-Cards}
+
+Linux offers several convenient wild-cards for matching multiple files or directories with a specific pattern. They are listed in the table below.
+
+\begin{center}
+\begin{tabular}{|l|l|} \hline
+  symbol & matched files or directories\\ \hline \hline
+  \texttt{*} & any string of characters\\ \hline
+  \texttt{?} & any single character\\ \hline
+  \texttt{[X]} & any character in the set \texttt{X}\\ \hline
+  \texttt{[!X]} & any character not in the set \texttt{X}\\ \hline
+\end{tabular}
+\end{center}
+
+One exception to the table above is that wild-cards do not match hidden files (files whose names start with a period). To match hidden files, the wild-card should follow a period. Some examples are listed below.
+
+<<engine="bash",eval=FALSE>>=
+# removes all non-hidden files in directory ~/tmpFiles
+rm ~/tmpFiles/*
+# removes all hidden files in ~/tmpFiles
+rm ~/tmpFiles/.*
+# copies all files in ~/tmpFiles whose names end with .html 
+# to directory /tmp
+cp ~/tmpFiles/*.html /tmp/
+# remove all files ending with .c or .o
+rm *.[co]
+# remove all files ending with period followed by lowercase character
+rm *.[a-z]
+@
+
+\subsubsection{Soft Links}
+
+In some cases it is desirable to have multiple references (potentially in different directories) to a single physical file or directory. The \texttt{ln -s X Y} creates a soft link \texttt{Y} pointing to the file or directory \texttt{X}. The file itself resides only once in disk, But it may be accessed using the original file reference \texttt{X} or using the soft link reference \texttt{Y}.
+
+<<engine="bash",eval=FALSE>>=
+ln -s tmp tmpLink # create a link tmpLink to the directory tmp
+ls tmp  # display files in ./tmp directory
+
+## file1 file2
+
+# enter the directory tmp by referencing the softlink tmp
+cd tmpLink
+ls
+
+## file1 file2
+@
+
+\subsubsection{Listing Directory Contents}
+
+The Linux command \texttt{ls} lists the contents of the current directory and the Linux command \texttt{ls X} lists all files and sub-directories in the directory \texttt{X}. The following flags are supported (see \texttt{man ls} for more information on the flags below and for additional flags).
+
+\begin{center}
+\begin{tabular}{|l|l|}\hline flag & effect \\ \hline \hline
+  \texttt{-l} & displays more detailed format\\ \hline
+  \texttt{-F} & appends a character denoting file type (files, directories, links, etc.)\\ \hline
+  \texttt{-a} & lists all files, including hidden files \\ \hline
+  \texttt{-R} & includes also files in all sub-directories, recursively\\ \hline
+  \texttt{-r} & displays results in reverse listing order\\ \hline
+  \texttt{-t} & sorts files by modification time\\ \hline
+  \texttt{-h} & displays file size in human readable format\\ \hline
+\end{tabular}
+\end{center}
+
+The example below shows some of these flags. Section~\ref{sec:os:users} describes the format of the \texttt{ls -l} command.
+
+<<engine="bash",eval=FALSE>>=
+ls
+
+## file.txt prog subdir
+
+ls -F
+
+## file.txt prog* subdir/
+
+ls -l
+
+## -rw-r--r--     1 joe   staff  1951 Feb  6 14:06 file.txt
+## -rw-r--r-x     1 joe   staff  2467 Feb  6 14:40 prog
+## drw-r--r--     2 joe   staff    68 Feb  6 14:43 subdir
+@
+
+\subsubsection{The PATH Variable}
+
+When a command is issued or a file is referred to, the operating system searches for the corresponding file in a list of directories specified by the \texttt{PATH} environment variable (the different directory names are separated by colon symbols). In many cases, the current directory is included in the \texttt{PATH} variable explicitly using the \texttt{.} notation. If there are multiple matches in the directories specified in the \texttt{PATH} variable, the first match is applied. The command \texttt{which X} displays the path to the matched file \texttt{X}. The command \texttt{whereis X} looks for files related to \texttt{X} in the standard Linux directory hierarchy, independent of the \texttt{PATH} variable.
+
+<<engine="bash",eval=FALSE>>=
+# show path to file matching command ls
+which ls 
+
+## /bin/ls
+
+# display PATH variable (note the current directory is the 
+# third directory in the list below, denoted by the period notation)
+echo $PATH  
+
+## /bin:/usr/bin:.
+
+# add the directory /home/joe/bin to PATH
+export PATH = $PATH:/home/joe/bin 
+echo $PATH
+
+# /bin:/usr/bin:.:/home/joe/bin
+@
+
+\subsubsection{Compression and Archives}
+
+Linux has a number of compressing and archiving commands that  are useful for handling large files or a large number of files. Specifically, the command \texttt{bzip} and \texttt{bunzip} can be used to compress a file into a file of (typically) smaller size. The reduction in size depends on the original file, but is usually significant for text files. The command \texttt{tar} can either pack multiple files into a single archive file or unpack a archive file into multiple files. The table below describes the typical usage of these commands.
+
+\begin{center}
+\begin{tabular}{|l|l|} \hline
+command & effect \\ \hline \hline
+\texttt{bzip2 X} & compresses file \texttt{X} into a (potentially) smaller file \texttt{X.bz2}\\ \hline
+\texttt{bzcat X.bz2} & displays contents of compressed file \texttt{X.bz2}\\ \hline
+\texttt{bunzip2 X.bz2} & uncompress the compressed file \texttt{X.bz2}\\ \hline
+\texttt{tar cvf X.tar Y/*} & packs all files in directory \texttt{Y} into a single file \texttt{X.tar} \\ \hline
+\texttt{tar -xvf X.tar} & unpacks the tar archive file \texttt{X.tar}\\ \hline
+\end{tabular}
+\end{center}
+
+The commands  \texttt{gzip}, \texttt{zip}, and \texttt{compress} are alternative compression programs to \texttt{bzip2}.
+
+The example below compresses, displays, and then uncompresses a text file containing the book Moby Dick. The bzip2 compression provided 63\% compression reducing the file size from 52 KB to 18 KB.
+
+<<engine="bash",eval=FALSE>>=
+cat mobyDick.txt | head -n 1  # first line
+
+## Call me Ishmael. Some years ago - never mind how long precisely...
+
+bzip2 -v mobyDick.txt  # compress mobyDick.txt to mobyDick.txt.bz2
+
+## mobyDick.txt:  2.762:1,  2.896 bits/byte, 63.80% saved, 
+## 52342 in, 18950 out.
+@
+
+The compressed file is no longer a text file and attempting to view it as an ASCII encoded will not work well. However, the command \texttt{bzcat} is able to display the text content of the compressed file without decompressing it first.
+
+<<engine="bash",eval=FALSE>>=
+# first line of compressed file
+cat mobyDick.txt.bz2 | head -n 1  
+
+## BZh91AY&SY}?lF?u ??)_?p????????...
+
+# using bzcat to display compressed file
+bzcat mobyDick.txt.bz2 | head -n 1  
+
+## Call me Ishmael. Some years ago - never mind how long precisely...
+@
+
+The example below creates an archive containing all files in the directory \texttt{tmp}, compresses the archive, and then reverses the process and extracts the files into a directory \texttt{tmp2}.
+
+<<engine="bash",eval=FALSE>>=
+# pack all files in tmp/ into a file archive.tar
+tar cvf archive.tar tmp/*
+# compress the file archive.tar (creating archive.tar.gz2)
+bzip2 archive.tar
+# uncompress archive.tar.vz2
+bunzip2 archive.tar.bz2
+# moves archive.tar.bz2 to subdirectory tmp2
+mv archive.tar tmp2 
+# change current directory to tmp2
+cd tmp2
+# unpack the tar file archive.tar in current directory
+tar xvf archive.tar
+@
+
+\subsubsection{Bash Initialization File}
+
+The hidden file \texttt{~/.bash\_profile} is automatically executed every time the bash shell is launched. It contains assignments for environment variable, alias definitions, and other customization.  A simple example file is listed below.
+
+<<engine="bash",eval=FALSE>>=
+# customize the prompt appearance
+export PS1="\\u@\h \\W]\\$"
+# add current directory to PATH
+export PATH=.:$PATH
+# avoid overwriting files with output redirection
+set -o noclobber
+# prompt user for removing or overwriting files with rm, cp, mv
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+# store most recent terminal commands in the file .bash_history
+export HISTFILE=".bash_history"
+# alias for printing last 10 commands
+alias h='history | tail'
+# alias ls and ll to use my favorite flags by default
+alias ls='ls -Ft'
+alias ll="ls -Fthalr";
+@
+
+In Section~\ref{sec:os:bash} we examined the \texttt{history} command and up-arrow and down-arrow keystrokes that recall previously executed terminal commands. The operating system accomplishes that by storing the most recently executed terminal commands in a file specified by the environment variable \texttt{HISTFILE} (often set to \texttt{.history} or \texttt{.bash\_history}).
+
+
+
+\subsubsection{Script Files}
+
+Shell scripts are text files containing bash commands that are executed when the file name is typed in the Linux terminal. The script file must reside in a directory that is included in the \texttt{PATH} variable, or otherwise its full path must be specified when it is executed. The file must have executable permission for the current user (see Section~\ref{sec:os:users} for more information on file permissions and how to set them) and must start with a line containing \texttt{\#} followed by a path to the shell program (see the line below as an example).
+
+<<engine="bash",eval=FALSE>>=
+#!/bin/bash
+@
+
+The shell script may be called with one or more arguments, which may be referred to in the script via the variables  \texttt{\$1}, \texttt{\$2}, and so on (one variable for each argument). Below is an example of a script that accepts two variables when it is called and prints them.
+
+<<engine="bash",eval=FALSE>>=
+cat printTwoArgs
+
+## #!/bin/bash
+## echo this is a bash script file that accepts two arguments
+## echo $1 $2
+
+chmod a+x printTwoArgs  # add executable permission to scriptFile
+./printTwoArgs one two  # executing script by listing its path
+
+## this is a bash script file that accepts two arguments
+## one two
+@
+
+%---------------------------------------------------------------------
+
+\section{Users and Permissions} \label{sec:os:users}
+
+Most modern operating systems enable multiple users to log-in at the same time, run concurrent processes, and ensure that the different users do not interfere with other users' processes and data.
+
+In most cases the set of users is partitioned into regular users and super-users. Regular users are not able to write or modify essential operating system files, modify or update the operating system itself, and access private files belonging to other users that are marked as private. Super users have permission to read, write, and modify all files in the disk, including files belonging to the operating system or to other users.
+
+The file permission policy specifies which files each regular user is allowed to access. In most cases, permissions can be granted for specific tasks such as reading a file, writing a file (includes removing it or updating it), and executing a file. For example, user 1 may have read and write access to file 1 and file 2 while user 2 may have only read access to file 1 and only execute access to file 2.
+
+A convenient way to specify file permission policies is to grant read, write, or execute permissions to entire groups of users (rather as specifying user permissions on an individual basis). For example, the operators user group may have only execute permission to several files while the programmers user group may have read, write and execute permissions.
+
+\subsection{Users and Permissions in Linux}
+
+There are two ways to execute in Linux privileged commands that are available only to super-users. 
+
+\begin{itemize}
+\item Prefix the  privileged command with \texttt{sudo}.
+\item Execute the \texttt{su} command, which opens a new shell that can execute privileged commands where the current user is \texttt{root}.
+\end{itemize}
+
+It is important to be very careful when executing privileged commands since they can lead to deleting important user information or corrupting the operating system by modifying or removing its files.
+
+To log-in as a specific user, the user name must be matched with the corresponding password. The Linux command \texttt{passwd} modifies the password of the current user. 
+
+Passwords are usually recorded in either \texttt{/etc/passwd} or \texttt{/etc/shadow} in encrypted format. The file \texttt{/etc/passwd} is readable to all users as it contains additional non-confidential user information. The file \texttt{/etc/shadow} is usually readable only to super-users. Since the passwords are recorded in encrypted format, no user or super-users may decipher the passwords.
+
+Below are some commands for examining user names and additional information in Linux.
+
+\begin{center}
+  \begin{tabular}{|l|l|}
+\hline
+command & effect \\ \hline \hline
+\texttt{who} & displays currently logged-in users and when they logged-in\\ \hline
+\texttt{whoami} & displays name of current user\\ \hline
+\texttt{hostname} & displays computer name \\ \hline
+\texttt{finger} & similar to \texttt{who}, but displays also how long has passed \\ & since the last time a user has been idle\\ \hline
+\texttt{finger X} & display additional information on user \texttt{X}\\ \hline
+\texttt{w} & displays a list of currently logged-in users, annotated with CPU \\ & time   used, CPU load, and currently executed programs. \\ \hline
+\end{tabular}
+\end{center}
+
+The command \texttt{ls -l X} displays detailed information on the file or directory \texttt{X}, including its access permission (see Figure~\ref{fig:os:permissions}). The first character displays the type: file, directory, or symbolic link. The next three groups of three letters each display permissions for the owner, user group, and other users. Each group of three letters correspond to read, write, and execute permissions. For example, the file in Figure~\ref{fig:os:permissions} has read, write, and execute permissions for the owner user \texttt{joesmith} (first triplet \texttt{rwx}), read and execute permissions for all users in the group \texttt{staff} (second triplet \texttt{r-x}), and read and execute permissions for all other users (third triplet \texttt{r-x}). The last fields are the number of links to the file, the user who owns the file, the group of users assigned to the file, the file size, the last modification date, and the file name.
+
+\begin{figure} \centering
+\includegraphics[scale=0.38]{pdf/permissions}
+\caption{Display format for the \texttt{ls -l} command for an executable file named \texttt{prog1}, owned by user \texttt{joesmith}. See text for more detail.} \label{fig:os:permissions}
+\end{figure}
+
+The command \texttt{chmod} modifies the permissions, assuming that the user issuing the command is the owner of the file (or a super-user using the \texttt{sudo} prefix). The command \texttt{chown} modifies the owner of a file and the command \texttt{chgrp} modifies the user group. The example below demonstrates the use of \texttt{chmod} and \texttt{chown}. 
+
+<<engine="bash",eval=FALSE>>=
+ls -a file.txt
+
+## -rw-r--r-- 1 joe  staff   1.9K Feb  6 14:06 file.txt
+
+chmod g+w file.txt # add write permission to group
+ls -a file.txt
+
+## -rw-rw-r-- 1 joe  staff   1.9K Feb  6 14:06 file.txt
+
+chmod a+w file.txt # add write permission to all users
+ls -a file.txt
+
+## -rw-rw-rw- 1 joe  staff   1.9K Feb  6 14:06 file.txt
+
+chmod a-w file.txt # remove write permission from all users
+ls -a file.txt
+
+## -rw-rw-r-- 1 joe  staff   1.9K Feb  6 14:06 file.txt
+
+chown jane file.txt
+ls -a file.txt
+
+## -rw-rw-r-- 1 jane  staff   1.9K Feb  6 14:06 file.txt
+@
+
+There are also other ways to invoke \texttt{chmod} using numeric flag arguments. See \texttt{man chmod}, \texttt{info chmod} or the online documentation for more information.
+
+\section{Input and Output} \label{sec:os:io}
+
+The operating system provides a convenient mechanism for accessing input and output devices. Specifically, it provides programs that read input from input devices such as keyboard or mouse, and that write output to output devices such the display or printer.  A second important role of the operating system is to ensure that multiple concurrent processes do not access the same input or output device at the same time, potentially overwriting the data.
+
+\subsection{Redirecting Input and Output in Linux}
+
+The commands \texttt{lp} sends files to the printer for printing. The command \texttt{lpstat} shows the current print queue and the command \texttt{cancel} cancels specific printing jobs. The table below lists the typical usage of these commands. Use the \texttt{man} or \texttt{info} commands (or online documentation) for details and additional flags. 
+
+\begin{center}
+\begin{tabular}{|l|l|} \hline
+command & effect\\ \hline \hline
+\texttt{lp -d X Y} & print file \texttt{Y} to printer \texttt{X}\\ \hline
+\texttt{lpstat} & shows print queue of default printer\\ \hline
+\texttt{cancel id} & removes job \texttt{id} from default printer queue \\ \hline
+\end{tabular}
+\end{center}
+
+An alternative way to interact with the printer is using the \texttt{lpr} (print), \texttt{lpq} (display printer queue), and \texttt{lprm} (remove print job from printer queue) commands. It is also possible to interact with the printer using the print menu of applications such as web browsers, pdf viewers, or word processors.
+
+By default, the terminal accepts input from the keyboard and sends output to the display. Linux offers a convenient mechanism to read input from a file instead of the keyboard, and to send output to a file, instead of the display. These mechanism, called input-output redirection, uses the \texttt{>} symbol to redirect output and the \texttt{<} symbol to redirect input.  The symbol \texttt{>>} redirects output to the end of the file without overwriting existing contents (append).
+
+The example below, concatenates three files into a single file using output redirection.
+
+<<engine="bash",eval=FALSE>>=
+# concatenate three files part1, part2, part3 into a single file 
+# called full
+cat part1 > full
+cat part2 >> full
+cat part3 >> full
+@
+
+The table below provides some additional information and use cases.  
+
+\begin{center}\begin{tabular}{|l|l|} \hline
+command & effect\\ \hline \hline
+\texttt{X < Y} & execute command \texttt{X}, reading input from file \texttt{Y}\\ \hline
+\texttt{X > Y} & execute command \texttt{X}, writing output to file \texttt{Y}\\ \hline
+\texttt{X < Y > Z} & execute command \texttt{X}, reading input from file \texttt{Y} \\ & and writing output to file \texttt{Z}\\ \hline
+\texttt{set -o noclobber} & refuse to overwrite existing files with I/O redirection\\ \hline
+\texttt{X >| Y} & same as above, but overwrites an existing file even\\ & if noclobber variable is set\\ \hline
+\texttt{X >} $\!\!\!\!$ \texttt{> Y} & execute command \texttt{X}, writing output to end of file \texttt{Y} \\ & without removing existing content (append)\\ \hline
+\texttt{tee X} & execute the command \texttt{X} and send input to \\ &both the display and to file \texttt{X} \\ \hline
+\texttt{tee -a X} & same as above, but append to file \\ \hline
+\end{tabular}\end{center}
+
+Using input-output redirection in conjunction with pipes is very useful. A couple of examples appear below that use the command \texttt{tr X Y} that replaces characters in its input matching the set \texttt{X} with corresponding characters in the set \texttt{Y}. 
+
+<<engine="bash",eval=FALSE>>=
+# create a text file and then append to it its uppercase version
+echo this is a text file > a.txt
+tr "a-z" "A-Z" < a.txt >> a.txt
+cat a.txt
+
+## this is a text file
+## THIS IS A TEXT FILE
+
+# convert text file to a sorted list of distinct words
+# annotated with their count
+echo this file is a text file > b.txt
+tr < b.txt -cs "[:alpha:]" "\n" | sort | uniq -c
+
+##    1 a
+##    2 file
+##    1 is
+##    1 text
+##    1 this
+
+tr < b.txt -d ' ' # remove all white spaces
+
+## thisfileisatextfile
+@
+
+More details on the \texttt{tr} command may be found by typing \texttt{man tr} or \texttt{info tr} or in online documentation.
+
+\section{Networking}
+
+Many operating systems offer networking services that connect to remote computers. These services are in turn used by applications that provide Internet browsing, email communication, and other networking capabilities.
+
+%One of the major trends in computing is the growing physical separation between the user and the computer. Computation is often performed by computer clusters in nearby or remote server rooms, away from the user laptop or PC. The operating system accommodates this trend by implementing programs for moving files between remote computers and for executing commands on remote computers.
+
+\subsection{Working on Remote Linux Computers}
+
+The identification of a remote computer connected to the Internet is usually done in terms of its domain name or its IP address. The domain name is a character sequence separated by periods such as \texttt{server1.domain.com} and the IP address is a sequence of numbers separated by periods. Both the domain name and the IP address may characterize a specific computer connected to the Internet. Specifying a specific username is done by prefixing the domain name with the username followed by a \texttt{@} symbol. A specific path in the remote file system can be references by appending the path to the domain name. For example, \texttt{joe@server1.domain.com/home/joe}  refers to user \texttt{joe}, the computer \texttt{server1.domain.com}, and the directory \texttt{/home/joe}.
+
+The \texttt{ssh X} command opens a new shell that operates in the remote computer \texttt{X} and encrypts the communication between the local and remote computers. 
+
+<<engine="bash",eval=FALSE>>=
+ssh joe@server1.domain.com
+@
+
+Jobs executed during an \texttt{ssh} session on a remote computer are terminated when the user logs out or when the network connection is lost. The command \texttt{nohup X \&} ensures that the command \texttt{X} will continue execution in the background even after the user logs out or the connection is lost.
+
+The \texttt{ftp} command transfers files between a local and a remote computer. After authentication, an \texttt{ftp} prompt appears that accepts the following commands.
+
+\begin{center}\begin{tabular}{|l|l|}\hline ftp command & effect\\ \hline \hline
+ \texttt{put X} & transfer file \texttt{X} from local computer to remote computer\\ \hline
+ \texttt{mput X} & transfers multiple files specified by \texttt{X} (potentially using wildcards) \\ & from local computer to remote computer\\ \hline
+ \texttt{get X} & transfer file \texttt{X} from remote computer to local computer\\ \hline
+ \texttt{mget X} & transfers multiple files specified by \texttt{X} (potentially using wildcards) \\ & from remote computer to local computer\\ \hline
+\texttt{ascii} & switch transfer mode to ascii (text files)\\ \hline
+\texttt{binary} & switch transfer mode to binary (non-text files)\\ \hline
+\texttt{cd} & change directory on the remote computer\\ \hline
+\texttt{lcd} & change directory on the local computer\\ \hline
+\texttt{help} & display list of available ftp commands\\ \hline
+\texttt{bye} & quit the ftp program\\ \hline
+\end{tabular}\end{center}
+
+An alternative to \texttt{ftp} that uses encrypted communication is the \texttt{scp} command. 
+
+The \texttt{scp} command copies files from a local computer to a remote computer or vice verse. The command \texttt{scp X Y} uses a format similar to the \texttt{cp X Y} command and may accept wildcards, except that \texttt{X} or \texttt{Y} may have a domain name prefix specifying the address of the remote computer. If no prefix appears the argument is assumed to refer to the local computer.
+
+<<engine="bash",eval=FALSE>>=
+# copy file /home/joe/file1 from server1.domain.com 
+# (authenticating as user joe) to local home directory
+scp joe@server1.domain.com/home/joe/file1 ~/
+# copy entire home directory (including sub-directories)
+# on server1.domain.com to local ~/tmp
+scp -R joe@server1.domain.com/home/joe/* ~/tmp/
+# copy local files ~/file2.* to home directory on remote computer
+scp ~/file2.* joe@server1.domain.com/home/joe/
+@
+
+The following table summarizes these commands.
+
+\begin{center}\begin{tabular}{|l|l|}\hline command & effect\\ \hline \hline
+\texttt{ssh X} & creates a secure shell operating on a networked computer  \texttt{X}\\ \hline
+\texttt{nohup X \&} & launches the command \texttt{X} in the background, \\ & without stopping execution when the user logs out\\ \hline
+\texttt{ftp X} & file transfer protocol (ftp) program for transferring files between\\ &  computer \texttt{X} and computer \texttt{Y}\\ \hline
+\texttt{sftp X} & a secure version of ftp\\ \hline
+\texttt{scp X Y} & secure file copy from computer \texttt{X} to computer \texttt{Y}  \\  & \texttt{X} or \texttt{Y} may be files on the current computer or a remote computer\\ \hline
+\end{tabular}\end{center}
+
+\section{Notes}
+
+Additional details on the roles and structure of operating systems are available in standard textbooks, such as \cite{Silberschatz2008}. More information on the Linux operating system are available in online documentation and in books that focus on Linux or one of its distributions, such as \cite{Sobell2010}. A useful resource on the bash shell is \cite{Newham2005}.

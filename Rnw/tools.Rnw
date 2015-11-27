@@ -1,0 +1,130 @@
+% week 2 
+%-----------------------------------
+\section{Version Control}
+\subsection{Subversion} 
+\subsection{Git}
+\subsection{Github}
+
+% week 3 
+%-----------------------------------
+\section{Build Tools}
+\subsection{Make}
+\subsection{Ant}
+
+%-----------------------------------
+\section{Documentation Tools}
+\subsection{Javadoc}
+\subsection{Doxygen}
+
+% week 4 
+%-----------------------------------
+\section{Unit Testing}
+\subsection{Unit Testing in Java with JUnit}
+\subsection{Unit Testing in Python with Nose}
+
+% week 1
+%-----------------------------------
+\section{Program Diagnostics}
+\subsection{Debugging}
+
+
+%---------------------------------------------------------------------------------------
+\section{Debugging and Profiling}
+
+Core R features some debugging and profiling functionality. Additional debugging and profiling functionality is available through third party packages, as described at the end of this section.
+
+The \texttt{print} and \texttt{cat} functions display values of relevant variables at appropriate positions and can be used while debugging code. Specifically, the \texttt{print} function displays the value of a variable, while the \texttt{cat} function displays the concatenation of values of several variables passed as parameters.
+
+The \texttt{browser} function suspends the execution of the R code, providing a interactive prompt through which the programmer can evaluate variables or execute new R code while debugging. Other options include stepping through line by line (by typing \texttt{n}), continuing execution (by typing \texttt{c}), or halting execution (by typing \texttt{Q}). The interactive session below demonstrates debugging with the \texttt{browser} function.
+
+<<engine="Rcpp",eval=FALSE>>=
+foo2=function(i) {
+	a = i + 1;
+	b = a + 1;
+	browser();
+	a = b + 1;
+	return(b)
+}
+> foo2(3)
+Called from: foo2(3)
+Browse[1]> a  # display the value of a
+[1] 4
+Browse[1]> b  # display the value of b
+[1] 5
+Browse[1]> n  # executes next command
+debug: a = b + 1
+Browse[2]> c  # continue execution
+[1] 5
+@
+
+The function \texttt{debug} binds the \texttt{browser} function to a user-specified function, invoking a debug session at each call site of said function.  The \texttt{undebug} cancels the binding.
+
+<<engine="Rcpp",eval=FALSE>>=
+foo3=function(i) {
+	a = i + 1;
+	b = a + 1;
+	a = b + 1;
+	return(b)
+}
+> debug(foo3)
+> foo3(1)
+debugging in: foo3(1)
+debug: {
+    a = i + 1
+    b = a + 1
+    a = b + 1
+    return(b)
+}
+Browse[2]> n  # execute first command
+debug: a = i + 1
+Browse[2]> n  # execute next command
+debug: b = a + 1
+Browse[2]> a  # display value of a
+[1] 2
+Browse[2]> p=2*a+2  # define a new variable
+Browse[2]> p
+[1] 6
+Browse[2]> n  # executes next command
+debug: a = b + 1
+Browse[2]> b
+[1] 3
+Browse[2]> c  # continue execution
+exiting from: foo3(1)
+[1] 3
+> undebug(foo3)
+@
+
+The \texttt{trace} function accepts the name of a function as a parameter and prints the function call with the passed arguments each time the function executes. If an error occurs, the variable \texttt{.Traceback}, a character array containing the currently active function calls, appears in the workspace.
+
+Additional debugging functionality is available from contributed packages. In particular,  the \texttt{debug} package \cite{Bravington2003} provides capabilities similar to those of standard graphical debuggers, including a graphical window showing the current command, setting conditional breakpoints, and the opportunity to continue debugging after an error. Another package is \texttt{edtdbg}, which integrates R debugging with external text editors such as vim.
+
+Profiling code refers to diagnosing which parts of the code are responsible for heavy computational efforts and memory usage. The function \texttt{Rprof(X)} starts a profiling session and saves the information to the file \texttt{X}. A call \texttt{Rprof(NULL)} indicates the end of the profiling session and \texttt{summaryRprof} shows the profiling summary.
+
+<<Rprofiler, eval=T>>=
+# start profiling
+Rprof("diagonsisFile.out")
+A = runif(1000)  # generate a vector of random numbers in [0,1]
+B = runif(1000)  # generate another random vector
+C = eigen(outer(A,B))
+Rprof(NULL)  # end profiling
+summaryRprof("diagonsisFile.out")
+@
+
+Total time is time spent in the function and its respective call subgraph; self time is the time spent only in the function itself. In the example below, the function \texttt{eigen} is responsible for nearly 100\% of the total time, but most of the execution time occurs within other functions called from within \texttt{eigen} (see the second report above). The methods that are called from within \texttt{eigen} are clearly the computational bottleneck, as the outer product and the generation of random samples are not responsible for any substantial total time.
+
+See \href{http://cran.r-project.org/doc/manuals/R-exts.pdf}{http://cran.r-project.org/doc/manuals/R-exts.pdf} for more information on \texttt{Rprof} and a discussion on profiling memory usage. The packages \texttt{proftools} and \texttt{profr} provide additional profiling functionality including analyzing the call graphs.
+
+
+\subsection{Speed Profiling}
+\subsection{Memory Profiling}
+\subsection{Coding Style}
+
+
+
+% week 2
+%-----------------------------------
+\section{Libraries}
+\subsection{BLAS, LINPACK, and LAPACK}
+\subsection{Eigen and Armadillo}
+\subsection{GNU Scientific Library}
+\subsection{Boost}

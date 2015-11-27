@@ -1,0 +1,698 @@
+\label{chap:hardware}
+
+In order to implement efficient computer programs, it is essential to understand the basic hardware structure of computers. In this chapter we examine the hardware structure of a typical computer, focusing on issues that are relevant for software development and algorithm design. 
+
+\section{Overview}
+
+A typical computer is composed of several important components that are connected to the computer's motherboard: the central processing unit (CPU) and graphical processing system (GPU), the memory, and the disk drive. The motherboard facilitates communication between these components and  supplies electricity to them. The motherboard also connects the components listed above with external devices such as keyboard, mouse, display, printer, and network card. Figure~\ref{fig:hardware:motherboard} shows a schematic illustration of a motherboard. 
+
+\begin{figure} \centering
+\includegraphics[scale=0.6]{pdf/motherboard}
+\caption{A schematic illustration of a motherboard. The motherboard hosts devices such as the central processing unit (CPU), the graphical processing unit (GPU), the random access memory (RAM), and the read only memory (ROM). The ports enable communication between the motherboard components and external devices such as display, mouse, and keyboard.} \label{fig:hardware:motherboard}
+\end{figure}
+
+
+\subsection{RAM and ROM} \label{sec:compOrg:RAM}
+
+The random access memory (RAM) is a collection of chips that store information in the form of a sequence of digital bits, where each bit is set to either 0 and 1. For example, the RAM may contain the following sequence.
+\begin{verbatim}
+001110100101101011101111001...0101110000110100011101
+\end{verbatim}
+
+\begin{defn} \label{def:hardware:bytes}
+One byte is a sequence of eight bits. A kilobyte (KB) is $2^{10}$ bytes, a megabyte (MB) is $2^{20}$ bytes, and a gigabyte (GB) is $2^{30}$ bytes.
+\end{defn}
+
+\begin{defn}
+The memory size is the length of the memory sequence in bits divided by 8 (or alternatively the number of bytes). 
+\end{defn}
+
+A typical laptop manufactured during the year 2015 has between four and eight GB of RAM.
+
+\begin{defn} \label{def:hardware:memoryAddress}
+The address of a part of the memory is its position in the memory sequence.
+\end{defn}
+
+The contents of the RAM may be read or written by the central processing unit (see Section~\ref{sec:hardware:cpuOverview} for an overview of the CPU). In most cases, the contents of the RAM are lost when power is turned off. The read only memory (ROM), is a different kind of memory that is impossible or harder to modify, and whose contents persist after power is turned off.
+
+The qualifier ``random access'' in RAM implies that it takes constant time for the CPU to read from a portion of RAM or write to it, regardless of its position. Specifically, accessing RAM bits that are close to previously accessed RAM bits takes as much time as accessing RAM bits that are far away from previously accessed RAM bits. This important property is not shared by mechanical disk drives.
+
+\subsection{The Disk}
+
+The hard disk drive (HDD) stores a a sequence of bits much like the memory. We distinguish between two types of disks: solid state disks and mechanical disks. Solid state disks store the bit sequence in chips. Mechanical disks store the bit sequence on disks that are coated with magnetic material. Reading or writing the contents of a mechanical disk is done by mechanically rotating the disk so the disk head is aligned with the appropriate disk location. In contrast to RAM, the content of either a solid state disk or a mechanical disk persists after power is turned off. 
+
+Due to the need for mechanical rotation, mechanical disks are not random access in the sense that accessing bits near previously accessed bits takes less time than accessing bits far away from previously accessed bits. This has significant impact on the design of algorithms that access the disk in that a sequential passage over a contiguous sequence of bits is preferred over accessing multiple non-contiguous bits. 
+
+A mechanical disk can store significantly more bits than a solid state disk (per fixed dollar cost), which in turn can store significantly more bits than RAM (per dollar cost). Technological advances are reducing the cost of solid state disks and are making it a viable alternative to mechanical disks in laptops and desktops that do not require large disk storage.
+
+\subsection{The Central Processing Unit} \label{sec:hardware:cpuOverview}
+
+The central processing unit (CPU) reads a sequence of instructions that are stored in binary form at a memory location, and executes them one by one. Each CPU has a specific set of possible instructions, called the instruction set, and a scheme to encode these instructions as bit sequences that are stored in memory. The CPU instructions are simple and in most cases fall into one of the following categories:
+\begin{itemize}
+\item read the content of a memory location,
+\item write content to a memory location, 
+\item transfer execution to instructions in a different memory location, or
+\item compute an arithmetic operation.
+\end{itemize}
+Despite the simplicity of the individual instructions, they are the building blocks of all computer programs and in turn all computer programs are essentially a long sequence of such instructions.
+
+CPUs can also read and write information to registers, which are components of the CPU that can hold a small amounts of memory and feature faster access time than the RAM.
+
+\begin{defn} \label{def:hardware:pc}
+The program counter (PC) is a part of the CPU that contains the address (see Definition~\ref{def:hardware:memoryAddress}) where the instruction that should be executed next is stored.  
+\end{defn}
+
+The CPU executes a program by repeating the following three steps.
+
+\begin{enumerate}
+\item The CPU finds the address in memory where the instruction that should be executed next is stored, and reads that instruction.
+\item The CPU executes the instruction.
+\item The CPU updates the program counter, typically by incrementing it by the number of bytes that are used to store an instruction. 
+\end{enumerate}
+
+The portion of memory that holds the instructions that are being executed by the CPU must be protected from being overwritten by the program itself. For that reason, the portion of memory that is used for storing the instructions and the portion of the memory that is used by the program do not overlap.
+
+\subsection{The Clock}
+
+The CPU clock is a repetitive metronome-like signal that synchronizes the different CPU and motherboard components.
+
+\begin{defn} \label{def:hardware:clock}
+The clock period is the time between successive CPU clock signals, measured in fractions of a second. The clock rate is the inverse of the clock period, representing the number of clock periods in a second. The clock rate is usually measured in multiples of Giga-Hertz (GHz) that equals billion clock periods per second.
+\end{defn}
+
+A typical laptop manufactured during the year 2015 laptop has a clock frequency of 2 GHz and a clock period of $1/(2\cdot 10^9)=0.5\cdot 10^{-9}$ second (one half of a billionth of a second).
+
+Different instructions may take different number of clock cycles (possibly more than one), with more complex instructions taking longer than simple instructions.
+
+\begin{defn}
+The CPU time of a particular program is the amount of time the CPU spends executing that program.
+\end{defn}
+
+\begin{defn}
+Clock cycles per instruction (CPI) is the average number of clock cycles per instruction. The averaging is weighted by the frequency with which the different instructions appear.
+\end{defn}
+
+Denoting the number of instructions in a program as the instruction count, we can express the CPU time as 
+\begin{align*}
+\text{CPU time} &= \text{number of clock cycles} \cdot \text{clock period}\\
+&= \frac{\text{number of clock cycles}}{\text{clock frequency}}\\
+&= \text{instruction count} \cdot \text{CPI} \cdot \text{clock period}\\
+&= \frac{\text{instruction count}\cdot\text{CPI}}{\text{clock frequency}}.
+\end{align*}
+The third equality above depends on the accuracy of the instruction weighting that is used in the calculation of the CPI. 
+
+\begin{defn}
+Million instructions per second (MIPS) is the number of instructions that can be executed during a second, divided by a million:
+\begin{align} \text{MIPS} = \frac{\text{instruction count}}{\text{execution time} \cdot 10^6}. \label{eq:MIPS}
+\end{align}
+\end{defn}
+
+Since the MIPS formula \eqref{eq:MIPS} depends on the type of instructions that are being executed, it is common to use a representative mix of instructions types. 
+
+\begin{defn}
+Floating point operations per second (FLOPS) is the number of floating point operations (addition, subtraction, multiplication of non-integers) that can be executed during a second.
+\end{defn}
+
+As in the case of MIPS, the FLOPS measure depends on the type of floating point operations (addition takes less time than multiplication), and is thus based on a representative mix of instruction types. Below are several standard abbreviations.
+
+\begin{center}
+\begin{tabular}{llll}
+Kilo & FLOPS &=& $10^3$ FLOPS\\
+Mega & FLOPS  &=& $10^6$ FLOPS\\
+Giga & FLOPS &=& $10^9$ FLOPS\\
+Tera & FLOPS &=& $10^{12}$ FLOPS\\
+Peta & FLOPS &=& $10^{15}$ FLOPS\\
+Exa & FLOPS &=& $10^{18}$ FLOPS
+\end{tabular}
+\end{center}
+
+Supercomputers during 2015 have reached 30 petaFLOPS, and future plans predict an exaFLOPS supercomputer before 2020.
+
+The three ways of measuring CPU speed above (clock frequency, MIPS, FLOPS) are insightful when comparing CPUs with identical instruction sets. However, these measures may be misleading when comparing the clock frequencies of CPUs with different instruction sets since the CPUs may differ in their CPI quantities. A common alternative for comparing the speed of CPUs with different instruction sets is to compare the time it takes to finish executing certain benchmark programs. Note, however, that this measurement depends on factors that are not related to the CPU such as the speed of the memory and motherboard communication channels.
+
+Traditionally, scaling up program speed was focused on increasing the clock frequency or improving the memory access speed. While we continue to see improvements in these quantities, the rate of that improvement is slowing down. An alternative way to scale up computation that has become very important is to parallelize the computation over a large number of computers. 
+
+\section{Binary Representations}
+
+We describe below conventional ways to encode integers, real numbers, and strings as bit sequences. Using such a binary encoding, the CPU is able to interpret memory bits as numbers or strings and to execute arithmetic and other operations.
+
+\subsection{Binary Representation of Integers} \label{sec:hardware:binRep}
+
+The conventional way to encode a non-negative integer $z$ as a sequence of bits $b_1,b_2,\ldots,b_k$ is as follows
+\begin{align}\label{eq:compOrg:int}
+  z=\sum_{i=1}^k b_i 2^{k-i},\qquad \qquad b_i\in\{0,1\}.
+\end{align}
+With this encoding a sequence of $k$ bits can encode any integer in the range $\{0,1,\ldots,2^{k}-1\}$. The value of $k$ depends on the CPU, but a common value is $k=32$.
+
+\begin{examp}
+We can encode with a byte ($k=8$) any number between 0 and 255. For example,
+\begin{align*}
+00000000& \quad\text{represents}\quad 0\\
+00000001& \quad\text{represents}\quad 1\cdot 2^0=1\\
+00000010& \quad\text{represents}\quad 1\cdot 2^1=2\\
+00000011& \quad\text{represents}\quad 1\cdot 2^1+1\cdot 2^0=3\\
+00000100& \quad\text{represents}\quad 1\cdot 2^2=4\\
+00011110& \quad\text{represents}\quad 1\cdot 2^4 + 1\cdot 2^3 + 1\cdot 2^2 + 1\cdot 2^1=30\\
+11111111& \quad\text{represents}\quad 1\cdot(1+2+4+\cdots+128)=255.
+\end{align*}
+\end{examp}
+
+There are two popular extensions of this encoding for representing signed integers: the sign and magnitude representation and the two's complement representation.
+
+The sign and magnitude encoding of $z$ uses the first bit to determine $\text{sign}(z)$ (typically 0 for positive and 1 for negative) and the remaining bits to determine $|z|$ using the encoding \eqref{eq:compOrg:int}. This encoding uses $k$ bits to represent any integer in the range
+\[\{-2^{k-1}+1,\ldots,0,\ldots,2^{k-1}-1\}.\] 
+Note that the number 0 has two different representations, one with a positive sign and one with a negative sign.
+
+\begin{examp}
+In the sign and magnitude representation, the number $42$ is represented as $00101010$ and the number $-42$ is represented as $10101010$ (assuming $k=8$).
+\end{examp}
+
+The two's complement representation for an unsigned integer $z$ uses the first bit to determines $\text{sign}(z)$ and the remaining bits to determine $|z|$ as follows.
+\begin{itemize}
+\item For positive integers $z$, the  representation is identical to the sign and magnitude representation  above.
+\item For negative numbers, the representation is the same as the sign and magnitude representation, only that all bits except for the first bit are flipped and then incremented by one.
+\end{itemize}
+
+Using this  encoding, a sequence  of $k$ bits can represent integers in the range  
+\[\{-2^{k-1}, \ldots, 0, \ldots, 2^{k-1}-1\}.\]
+In contrast to the sign and magnitude representation, zero has only a single encoding: $00...0$. The two's complement is more popular than the sign and magnitude representation since it facilitates the implementation of arithmetic subtraction.
+
+\begin{examp}
+In the two's complement representation with eight bits, we have
+\begin{align*}
+00000000& \quad\text{represents}\quad +0\\
+00000001& \quad\text{represents}\quad +1\\
+11111111& \quad\text{represents}\quad -1\\
+00000010& \quad\text{represents}\quad +2\\
+11111110& \quad\text{represents}\quad -2\\
+00101010& \quad\text{represents}\quad +42\\
+11010110& \quad\text{represents}\quad -42\\
+10000000& \quad\text{represents}\quad -128.
+\end{align*}
+\end{examp}
+
+\subsection{Binary Representation of Real Numbers}
+
+There are two different approaches to representing real numbers with bits: fixed point and floating point.
+
+In the fixed point representation, the bit sequence $b_1,\ldots,b_k$ is interpreted as the corresponding integer, for example using two's complement representation, multiplied by $2^{-r}$ for some $r>0$. This encoding can represent real numbers in the range $R=[-2^{k-1}/2^r,(2^{k-1}-1)/2^r]$. The representation is approximate rather than precise, as it cannot distinguish between two very close real numbers. As $k$ increases the approximation quality increases. As $r$ increases the range $R$ of the possible numbers that can be represented decreases but the representation accuracy within that range increases. Note that the representation accuracy is uniform across the range $R$ (the density of the represented values in different regions of $R$ is uniform).
+
+The floating point representation differs from the fixed point representation in that the quality of the approximation in representing real numbers is non-uniform inside the achievable range $R$. The sequence of bits in this representation is divided into three binary sub-sequences: a single sign bit $b$, a sequence of exponent bits $e_1,\ldots,e_k$, and a sequence of mantissa bits $m_1,\ldots,m_k$. The three groups of bits combine to represent the number 
+\[(-1)^{b} \cdot M\cdot 2^E,\] 
+where $M$ is the number encoded by the mantissa bits $m_1,\ldots,m_k$, and $E$ is the number encoded by the exponent bits $e_1,\ldots,e_k$.
+
+Many computers have two versions of this representation: a single precision representation using a total of 32 bits and a double precision representation using a total of 64 bits. Double precision floating point representation can capture a wider range of possible values and with higher accuracy than single precision floating point representation. The precise number of mantissa bits and exponent bits and their encoding depends on the floating point standard being used. See for example http://en.wikipedia.org/wiki/IEEE\_754-1985 for a description of the popular IEEE 754-1985 standard.	
+
+Floating point representation approximates real numbers in a typically wide range of numbers $[a,b], a<0, b>0$, with better approximation quality for numbers that are small in absolute value and worse approximation quality for numbers that are large in absolute value. In other words, unlike fixed point representation, the density of floating point representations differs in different ranges of $R$. This gives floating point representation more flexibility in representing both very small values (in absolute values) very accurately and very large numbers (in absolute values) less accurately. For this reason, floating point representations are much more popular in typical applications than fixed precision representations.
+
+\subsection{Encoding Strings as Bits}
+
+The American Standard Code for Information Interchange (ASCII) encodes the letters a-z, A-Z, 0-9, and other keystrokes such as colon, semicolon, comma, period, plus, and minus as integers in the range 0-255, represented by 8 bits according to the unsigned integer representation described in  Section~\ref{sec:hardware:binRep}. The ASCII mapping appears in many web-sites, including for example \href{http://en.wikipedia.org/wiki/ASCII}{http://en.wikipedia.org/wiki/ASCII}. Concatenating bytes in ASCII representation leads to a convenient representation of text strings.
+
+\begin{examp}
+The ASCII encoding of A and B are 65 and 66 respectively. The binary encoding of the string AB is the following sequence of sixteen bits or two bytes.
+\[  01000001 \,\,\, 01000010.\]
+\end{examp}
+
+Unicode is an alternative to ASCII that can represent a wider range of characters including Cyrillic, Arabic, Hebrew, and Chinese letters. The current unicode mapping is available at \href{http://unicode.org/charts/}{http://unicode.org/charts}.
+
+\subsection{Rounding, Overflow, and Underflow}
+
+Rounding, overflow, and underflow are three important phenomena that follow from the binary representations described above.
+
+The rounding phenomenon occurs when a real number $x$ cannot be precisely matched to a fixed point or floating point representation. The resulting rounding approximation $\text{fp}(x)$ is typically either the nearest fixed point or floating point representation of $x$, or a truncated version of $x$ obtained by dividing and dropping the remainder. 
+
+An roundoff example in R code  appears below (see Chapter 4 for a description of the R programming language). The symbol \texttt{\#} below denotes comment and the symbol \texttt{\#\#} prefixes the output of the code below.
+
+<<roundoff1, eval=TRUE>>=
+# example: roundoff of 1/3=0.3333333333333333333333333..
+# to a nearby floating point
+print(1/3, digits=22) # print 22 digits of fp(1/3)
+@
+
+The overflow phenomenon occurs when the number $x$ has a big absolute value that is outside the range of possible binary representations. In the case of integers, this occurs when the number of bits in the representation is too small to represent the corresponding number. In the case of floating point representation, this occurs when the number of exponent bits is too small to represent the corresponding number. When overflow occurs the number is replaced by either the closest binary representation or is marked as an overflow and considered unavailable. 
+
+An overflow example using R code appears below.
+
+<<overflow1, eval=TRUE>>=
+print(10^100)   # no overflow
+print(10^500)   # overflow, marked by Inf value 
+@
+
+The underflow phenomenon occurs when the number $x$ is closer to 0 than any of the possible binary representations. In the case of floating point representation, this occurs when the number of exponent bits is too small (the negative exponent is not low enough). In most cases the number $x$ is then replaced by zero.
+
+An underflow example using R code appears below.
+
+<<underflow, eval=TRUE>>=
+print(10^(-200),digits=22) # roundoff, but no underflow
+print(10^(-400),digits=22) # underflow
+@
+
+We conclude with a few practical observations.
+
+\begin{itemize}
+\item Subtracting the floating point representation of two similar numbers $x,y$ results in a loss of approximation accuracy. Specifically, some of the mantissa bits of $\text{fp}(x)$ cancel out with the corresponding mantissa bits of $\text{fp}(y)$. For example,
+\[ 0.1232215 \cdot 10^{k} - 0.1232214 \cdot 10^{k} =
+0.0000001 \cdot 10^{k},\]
+which is a much worse approximation of $0.1232215-0.1232214$ than $\text{fp} ( 0.1232215 - 0.1232214 )$. 
+
+The floating point representation of the subtraction $\text{fp}(x)-\text{fp}(y)$ may have a mantissa with mostly zero bits indicating a poor  relative approximation quality
+\[\frac{|\text{fp}(x)-\text{fp}(y)-(x-y)|}{|x-y|}.\]
+In the extreme case where $x$ and $y$ are close enough to have identical floating point representations, we have $fp(x)-fp(y)=0$ and
+\[\frac{|0-(x-y)|}{|x-y|}=0,\]
+even though $\text{fp}(x-y)\neq 0$ may provide a good approximation for $x-y$.
+
+\item Comparing whether two real numbers are identical is problematic due to roundoff errors. It is preferable to consider instead the distance of the absolute value of the difference from zero. 
+
+For example, suppose we want to compare whether a binary representation of $\sqrt{3}\cdot \sqrt{3}$ is the same (or very similar) as the binary representation of 3. A precise comparison may fail as
+\[\text{fp}(\sqrt{3})\cdot \text{fp}(\sqrt{3})\neq \text{fp}(3),\]
+while an approximate comparison
+\[|\text{fp}(\sqrt{3})\cdot \text{fp}(\sqrt{3}) - \text{fp}(3)|<\epsilon\] 
+may be useful for some small $\epsilon>0$. 
+
+The following C++ program demonstrates this example.
+
+<<engine="Rcpp",eval=FALSE>>=
+int main ()
+{
+  cout << (sqrt(3)*sqrt(3) - 3)                 << endl
+       << (sqrt(3)*sqrt(3) == 3)                << endl
+       << (fabs(sqrt(3)*sqrt(3)-3) < 0.0000001) << endl;
+  return 0;
+}
+@
+
+The program prints the following result showing that an exact comparison (second line) fails while a approximate comparison works (third line).
+
+<<engine="Rcpp",eval=FALSE>>=
+-4.440896e-16
+0
+1
+@
+
+
+\item A common trick for avoiding overflow and underflow is to work in a logarithmic scale, rather than the original scale. Since logarithm compresses large positive numbers (see figure below), $\text{fp}(\log(x))$ will not not overflow in many cases where $\text{fp}(x)$ overflows. Similarly, since logarithm stretches numbers close to zero  (see figure below), $\text{fp}(\log(x))$ will not underflow in many cases where $\text{fp}(x)$ underflows.
+
+<<hardware1m, eval=TRUE, fig.height=4.5>>=
+curve(log, from = 0, to = 1000, xlab = "$x$", 
+      ylab = "$\\log(x)$", main = "The logarithm function")
+@
+
+
+To maintain correctness of arithmetic operations, multiplications need to be replaced with sums due to the relation
+\begin{align*} 
+	\log \prod_i x_i &= \sum_i \log(x_i)\\
+	\prod_i x_i &= \exp\left(\sum_i \log(x_i)\right).
+\end{align*}
+Once all the calculations are completed on the log-scale without underflow or overflow, the result may be converted to the original scale using the exponent function, or in case where the final result triggers underflow or overflow, the result may be kept in log-scale. Note that this method does not work for negative numbers since logarithm is defined only for positive numbers.
+\end{itemize}
+
+For example, the following underflow can be avoided by keeping the result in logarithm scale (we use below the result $\log (a^b)=b\log a$).
+
+<<hardware:uf0, eval=TRUE>>=
+print(3^(-800), digits = 22) # underflow
+print(log(3^(-800)), digits = 22) # log of underflow
+# avoiding underflow, keep result in log-scale
+print(-800 * log(3), digits = 22) 
+@
+
+The example below shows how to avoid underflow when multiplying several terms, some of which are very small. Results may be returned in the log-scale or in the original scale. The practice of keeping track of a product of small numbers on a log-scale is very useful when computing probabilities over a large sample space.
+
+<<hardware:uf2, eval=TRUE>>=
+print(3^(-600) * 3^(-100) * 3^(150), digits = 22) # underflow
+# avoiding underflow, returning results in log-scale
+print(log(3) * (-600 - 100 + 150), digits = 22)
+# avoiding underflow, returning results in original scale
+print(exp(log(3) * (-600 - 100 + 150)), digits = 22)
+@
+
+
+\section{Assembly Language} \label{sec:compOrg:CPU}
+
+\lstset{language=}
+
+The role of the CPU is to execute a program, composed of a sequence of simple instructions.
+
+\begin{defn} 
+The set of possible instructions that the CPU can execute is called the instruction set or assembly language of the CPU. The binary encoding of these instructions is called the machine language of the CPU. 	The Assembler is a program that converts the assembly language instructions into machine language.
+\end{defn}
+
+The CPU processes instructions one at a time. The instruction processing cycle proceeds along the following stages.
+\begin{enumerate}
+\item The contents of the memory pointed to by the program  counter (Definition~\ref{def:hardware:pc}) are written to a part of the CPU, known as the instruction register.
+\item The contents of the instruction register are decoded.
+\item The CPU executes the instruction.
+\item The program counter is incremented by the number of bytes corresponding to the instruction.
+\end{enumerate}
+
+\subsection{Memory Addresses}
+
+Most modern computers are byte-addressable, which means that each memory byte has its own sequential address. The address of the first byte is 0, the second is 1, and so on. Memory addresses are encoded in binary form using the binary encoding for unsigned integers in Section~\ref{sec:hardware:binRep} using $k$ bits. 
+
+Note that in order to be able to express all bytes in memory we have the following constraint
+\[ B \leq 2^k, \]
+where $B$ is the number of bytes in memory. For example, 32-bit computers encode addresses using $k=32$ bits, implying that an instruction cannot point to memory addresses beyond $2^{32}-1$ or 4 gigabytes. This motivated the move from 32 bit computers to 64 bit computers that encode addresses using $k=64$ bits and can refer to memory larger than 4 GB.
+
+The sequential memory addresses from 0 to $B-1$ are sometimes referred to as physical memory addresses. Programmers typically refer to addresses that are relative to the program counter (Definition~\ref{def:hardware:pc}), or to virtual memory addresses. It is the task of the operating system and the compiler to translate these addresses into physical memory.
+
+\subsection{Instruction Set}
+
+The list below outlines the most common assembly language instructions.
+
+\begin{itemize}
+\item Read the content of a memory address and write it to another memory address.
+\item Read the content of a memory address and write it to a register.
+\item Read the content of a register and write it to a memory address.
+\item Add or subtract two signed or unsigned integers located in memory or registers. Write the result to memory or to a register.
+\item Operate logical AND or OR on two sequences of bits located in memory or registers and write the result to memory or to a register. For example
+\begin{verbatim}
+00110101 AND 00001111 = 00000101.
+\end{verbatim}
+\item Add, subtract, or multiply the values encoded by two sequences of bits in memory, and write the result to memory.
+\item Shift bits to the left or right of a sequence of bits located in memory or a register and write the result to memory or a register. For example,
+\begin{verbatim}
+SHIFT-LEFT(00010001)  = 00100010.
+\end{verbatim}
+\item Set the program counter (Definition~\ref{def:hardware:pc}) to a new memory address, transferring program execution to a different code segment.
+\item Set the program counter to a new memory address if two memory addresses contain identical numbers, or alternatively if the number in the first memory address is larger than the number in the second memory address.
+\end{itemize}
+
+While all the instructions above constitute simple operations, a carefully planned sequence of such operations may result in a powerful computer program. The precise set of instructions and their binary encoding differs from one CPU to the next.
+
+Below is a partial list of instructions of a typical CPU. We will explore a few simple programs in this assembly language.
+
+\begin{itemize}
+\item \texttt{MOVM A1 A2}: read data in memory address \texttt{A1} and write it to memory address \texttt{A2}.
+\item \texttt{MOVR A1 R1}: read data in memory address \texttt{A1} and write it to register \texttt{R1}.
+\item \texttt{MOVD D A1}: write data \texttt{D} to memory address \texttt{A1}.
+\item \texttt{ADD A1 A2 A3}: read data in memory addresses \texttt{A1} and \texttt{A2}, interpret them as unsigned integers, add them, and store the result in \texttt{A3}.
+\item \texttt{SUB A1 A2 A3}: read data in memory addresses \texttt{A1} and \texttt{A2}, interpret them as unsigned integers, subtract them, and store the result in \texttt{A3}.
+\item \texttt{MUL A1 A2 A3}: read data in memory addresses \texttt{A1} and \texttt{A2}, interpret them as unsigned integers, multiply them, and store the result in \texttt{A3}.
+\item \texttt{INC A1}: read data in memory addresses \texttt{A1}, interpret it as unsigned integers, add one to it, and store the result back in \texttt{A1}.
+\item \texttt{JMP A1}: set the program counter to address \texttt{A1}.
+\item \texttt{CMJ A1 A2 A3}: set the program counter to address \texttt{A3} if the data in addresses \texttt{A1} and \texttt{A2} are equal.
+\item \texttt{CMN A1 A2 A3}: set the program counter to address \texttt{A3} if the data in addresses \texttt{A1} and \texttt{A2} are different.
+\end{itemize}
+
+We assume, for the sake of simplicity, that both data and addresses are stored as a single byte. Since every instruction above has at most three argument, we encode each instruction using four bytes: one to represent the instruction type itself (0 for \texttt{MOVM}, 1 for \texttt{MOVR}, 2 for \texttt{MOVD}, and so on until 7 for \texttt{CMJ}), and the remaining three bytes to represent potential arguments (note that all numbers must be encoded in binary form).
+
+
+\begin{examp}
+The instruction \texttt{MOVD 13 3} may be encoded as follows:
+\begin{verbatim}
+00000010 00001101 00000011 00000000
+\end{verbatim}
+with the first byte encoding 2 for the \texttt{MOVD} operation (as the third instruction in the sequence of possible instruction), the second byte encoding 13, the third byte encoding 3, and the last byte encoding zero (unused). Assuming that the instruction above is stored starting at the address byte 128, the memory content of the four bytes starting at 128 is as follows.
+\begin{lstlisting}[caption=instruction sequence example (Assembly)]
+decimal  binary
+address  address            content      interpretation
+-------------------------------------------------------
+128      10000000           00000010     MOVD
+129      10000001           00001101     13
+130      10000010           00000011     3
+131      10000011           00000000     0
+\end{lstlisting}
+\end{examp}
+
+
+
+\begin{examp}
+The following command sequence
+
+\begin{lstlisting}[caption=instruction sequence example (Assembly)]
+INC 10
+JMP 128
+\end{lstlisting}
+increments the content of memory address 10 by one and then starts executing the instructions stored at memory address 128. Assuming the two instructions are stored in memory starting at address 128, the corresponding binary encoding appears below.
+
+\begin{lstlisting}[caption=infinite loop code (Assembly)]
+decimal  binary
+address  address            content      interpretation
+-------------------------------------------------------
+128      10000000           00000100     INC
+129      10000001           00001010     10
+130      10000010           00000000     0
+131      10000011           00000000     0
+132      10000100           00000111     JMP
+133      10000101           10000000     128
+134      10000111           00000000     0
+135      10001000           00000000     0
+\end{lstlisting}
+
+This program will execute an infinite loop that repeatedly adds  one to the contents of memory address 10 (at some point an overflow will occur).
+
+As the CPU executes the program above, the memory content will change as follows. We assume that  memory address 10 contains the unsigned integer 7.
+
+The initial memory content is
+
+\begin{lstlisting}[caption=initial memory content (Assembly)]
+address  address (binary)   content      interpretation
+-------------------------------------------------------
+10       00001010           00000111     7
+.
+.
+128      10000000           00000100     INC
+129      10000001           00001010     10
+130      10000010           00000000     0
+131      10000011           00000000     0
+132      10000100           00000111     JMP
+133      10000101           10000000     128
+134      10000111           00000000     0
+135      10001000           00000000     0
+.
+.
+
+Program counter: 128
+\end{lstlisting}
+
+The memory content is modified after the first instruction is executed (note the change in the value of the program counter indicating the address containing the next instruction).
+
+\begin{lstlisting}[caption=memory content after INC instruction executed (Assembly)]
+address  address (binary)   content      interpretation
+-------------------------------------------------------
+10       00001010           00001000     8
+.
+.
+128      10000000           00000100     INC
+129      10000001           00001010     10
+130      10000010           00000000     0
+131      10000011           00000000     0
+132      10000100           00000111     JMP
+133      10000101           10000000     128
+134      10000111           00000000     0
+135      10001000           00000000     0
+.
+.
+
+Program counter: 132
+\end{lstlisting}
+
+The memory content after the execution of the next instruction appears below.
+
+\begin{lstlisting}[caption=memory content after JMP instruction is executed (Assembly)]
+address  address (binary)   content      interpretation
+-------------------------------------------------------
+10       00001010           00001000     8
+.
+.
+128      10000000           00000100     INC
+129      10000001           00001010     10
+130      10000010           00000000     0
+131      10000011           00000000     0
+132      10000100           00000111     JMP
+133      10000101           10000000     128
+134      10000111           00000000     0
+135      10001000           00000000     0
+.
+.
+
+Program counter: 128
+\end{lstlisting}
+
+After the execution of the next instruction the memory content is as follows.
+
+\begin{lstlisting}[caption=memory content after INC instruction is executed again (Assembly)]
+address  address (binary)   content      interpretation
+-------------------------------------------------------
+10       00001010           00001001     9
+.
+.
+128      10000000           00000100     INC
+129      10000001           00001010     10
+130      10000010           00000000     0
+131      10000011           00000000     0
+132      10000100           00000111     JMP
+133      10000101           10000000     128
+134      10000111           00000000     0
+135      10001000           00000000     0
+.
+.
+
+Program counter: 132
+\end{lstlisting}
+\end{examp}
+
+\begin{examp} \label{examp:hardware:exp}
+
+The following assembly program computes $2^4$ and writes the result to the display, which is mapped to the memory address 0. We omit below the binary encoding of the instructions and addresses for readability purposes.
+
+\begin{lstlisting}[caption=instruction set that computes two to the power of four (Assembly)]
+address   instruction      comment
+--------------------------------------------------------------
+128       MOVD 3, 8        store 3 (counter) in memory
+132       MOVD 2, 9        store 2 (multiplier) in memory
+136       MOVD 2, 10       store 2 (result) in memory
+140       MOVD 0, 11       store 0 in memory
+144       MOVD 1, 12       store 1 in memory
+148       MUL  9, 10, 10   multiply temp result by number 1
+152       SUB  8, 12, 8    reduce counter
+156       CMN  8, 11, 148  if counter is not 0, repeat
+160       MOVM 10, 0       write result to display (address 0)
+\end{lstlisting}
+
+Note that memory addresses in the vicinity of address 128 store the instructions that are being executed (the program), while memory addresses that are being used by the program are in the range 0-10. It is essential to keep these two memory regions separate to prevent a program from overwriting its own instructions.
+\end{examp}
+
+It is hard to imagine how assembly language programs are capable of the complex behavior we attach to computers. For example, how can a sequence of addition, subtraction, and memory movements implement a computerized chess player, a complex search engine, or a language translation tool. Furthermore, even if a long sequence of assembly language instructions can create such complex behavior, it is hard to see how a programmer can come up with that sequence.
+
+The answer to the first question is based on two observations: (a) it is possible to create complex computer behavior with high level languages like C++, and (b) each C++ instruction is translated into a sequence of assembly language instructions. Taken together, the two observations above imply that a complex C++ program is equivalent to a longer sequence of assembly language instructions. In fact, it is that longer sequence of assembly language instructions that are actually executed by the CPU and not the original C++  program.
+
+The answer to the second question is related to the first answer above. It is extremely hard for a programmer to write complex programs in assembly language. Fortunately, high level computer languages like C++ exist and the programmers can concentrate on expressing their program in these language. A separate program, called the compiler in the case of C++ and the interpreter in the case of R, converts the high level C++ or R code into a long sequence of assembly language instructions. That sequence is then executed by the CPU.
+
+\begin{examp}
+The following C++ code
+\begin{lstlisting}[language=C++,caption=command that computes two to the power of four (C++)]
+cout << pow(2,4);
+\end{lstlisting}
+prints the result of $2^4$. It may be converted by the compiler to a sequence of assembly language instructions similar to the program in Example~\ref{examp:hardware:exp}. Obviously the one line C++ program is much easier for a programmer to write than the corresponding assembly language code in Example~\ref{examp:hardware:exp}.
+\end{examp}
+
+\section{Interrupts}
+
+The model described above implies that the CPU executes instructions sequentially. This model is problematic in that it does not enable input and output devices to impact program execution. Interrupts are a mechanism that facilitates the interaction of input and output devices with the CPU.
+
+Interrupts are signals, sent from input and output devices to the CPU, that suspend the execution of the current program. The program counter is set to an address containing the interrupt handler, which is a sequence of instructions designed to handle the input or output device. As a result, once the interrupt signal arrives the CPU executes the interrupt handler routine, and afterwards it resumes the execution of the original program.
+
+The input and output devices typically pass information to and from the CPU through the memory. For example, once a keyboard key is pressed, the device writes the information directly to memory and informs the CPU via an interrupt signal. The CPU then executes the interrupt handler, reads the information containing the keyboard key, decides if additional action is needed, and then resumes execution of the original program. 
+
+\section{The Memory Hierarchy} \label{sec:hardware:memory}
+
+The speed with which the CPU reads data from memory and writes to memory is critical. A fast CPU with slow memory access would execute most programs slowly as the memory access forms a computational bottleneck.
+
+The term memory hierarchy refers to a sequence of memory devices progressing from larger, slower, and cheaper to smaller, faster, and more expensive. The following list shows the most common devices, sorted by CPU access time (see also Figure~\ref{fig:hardware:memory}).
+\begin{enumerate}
+\item Registers
+\item Cache memory
+\item RAM
+\item Solid state disk
+\item Mechanical hard disk
+\item Optical disk
+\item Magnetic tape
+\end{enumerate}
+
+Obviously, it is desirable to have the faster devices in the upper memory hierarchy as large as possible and dispense with the slower devices in the lower levels. The problem is that the upper levels in the memory hierarchy are restricted in their size due to manufacturing costs and physical constraints.
+
+\begin{figure} \centering
+\includegraphics[scale=0.9]{pdf/memory}
+\caption{The memory hierarchy on a typical personal computer. The $y$ axis represents CPU access speed and the $x$ axis represents typical size due to manufacturing costs and physical constraints.} \label{fig:hardware:memory}
+\end{figure}
+
+Registers are located inside the CPU and are capable of storing several bytes. Due to their proximity to the CPU they have very fast access speed but are restricted to a relatively small size.
+
+Cache memory is located in the periphery of the CPU and is typically capable of storing thousands or millions of bytes. The cache memory is substantially larger than registers but is also slower to access. There are several levels of cache, denoted L1, L2, and so on, sorted in order of decreased proximity to the heart of the CPU and consequentially of decreased speed and larger sizes. For example, a typical 2015 laptop may have 64 KB L1 cache, 256 KB L2 cache, and several MB of L3 cache.
+
+The RAM is a sequence of chips located outside of the CPU. The location outside of the CPU explains its slower access time and also its potentially larger sizes. A typical 2015 laptop has between four and eight GB.
+
+Hard disks are located outside of the CPU and have slower access than RAM. Solid state disks are faster than mechanical disks since they do not require the mechanical alignment of the disk head with the appropriate location. Disks are larger than RAM per dollar cost, with solid state disks holding less per dollar cost than mechanical hard disks. A typical 2015 laptop may have about one TB (terabyte) of mechanical disk space or 256 MB of solid state disk space.
+
+At the bottom of the memory hierarchy are the optical disk and magnetic tapes. Both require mechanical action to operate and thus have relative slow access speed. On the other hand, their technology allow large storage spaces for relatively low cost. These devices are typically used to archive data that is not frequently used or to back-up data.
+
+%The differences in access time among the memory devices above suggest preferring the registers and cache over the RAM and the disk, which are in turn preferred to the optical disk and the magnetic tape. The problem is that the faster devices are also necessarily smaller and are not generally sufficient for executing complex programs.
+
+Effective allocation of information to the memory hierarchy components depends on the usage frequency of that information. For example, contents that are rarely accessed may be safely kept at the bottom of the memory hierarchy (optical disks and magnetic tapes can be used for backing up data and are thus used only if the original data is accidentally deleted or corrupted). On the other hand, contents that are frequently accessed by the CPU should be kept at top hierarchy levels such as the cache. In this case, the total memory access time will be relatively low.
+
+The usefulness of the memory hierarchy rests on the assumption that we can predict which memory addresses will be used more frequently. The two principles below motivate this assumption.
+
+\begin{description}
+\item[Temporal Locality.]
+If a particular memory location is referenced, then it is likely that the same location will be referenced again in the near future.
+\item[Spatial Locality.] 
+If a particular memory location is referenced, then it is likely that nearby memory locations will be referenced in the near future.
+\end{description}
+
+We focus in this section on the relationship between the cache and the RAM that is managed by the computer hardware. The relationship between the RAM and the disk  (virtual memory) is managed by the operating system software and is described in the next chapter.
+
+\subsection{Cache Structure}
+
+The cache memory is divided into units called rows. Each row is a sequence of bits divided into three groups: tag bits, data bits, and flag bits. The data bits contain the portion of the RAM memory whose address is indicated by the tag bits. The flag bit indicates whether the cache row is clean (replicates the contents of the RAM) or dirty, in which case its content is more up to date than the corresponding RAM address. See Figure \ref{fig:hardware:cache} for an illustration of a cache and corresponding physical memory.
+
+\begin{figure}\centering
+\includegraphics[scale=0.7]{pdf/cache}
+\caption{The rows of the cache memory are divided into three groups of bits. The data bits contain the portion of the RAM memory whose address is indicated by the tag bits. The flag bit indicates whether the cache row is clean (replicates the contents of the RAM) or dirty, in which case its content is more up to date than the corresponding RAM address.} \label{fig:hardware:cache}
+\end{figure}
+
+
+When the CPU attempts to read or write a memory address, the cache checks whether it contains the relevant memory address by comparing the address to the tags in the cache rows. A cache hit occurs if the requested address matches the tag field of one of the cache rows. Otherwise we have a cache miss.
+
+A memory read request may result in a cache hit or a cache miss. If there is a hit, the appropriate cache row is passed to the CPU for processing. If there is a miss, the appropriate memory content is read from the RAM and written to the cache, overwriting one of the existing rows, and then passed on to the CPU.
+
+A memory write may similarly result in a cache hit or a cache miss. If there is a cache hit, the cache gets updated with the new memory content. In some cache strategies, the RAM gets updated immediately as well, ensuring that the cache contents are up to date with the RAM. In other cache strategies, the RAM is not updated immediately, resulting in an up-to-date cache and an outdated RAM. In this case, the flag bit of the appropriate cache row is set to one, indicating lack of synchronization between the cache row and the RAM address (see Figure~\ref{fig:hardware:cache2}). As long as the modified cache row remains in the cache there is no compelling need to update the RAM (the CPU will deal with the updated cache row, rather than the outdated RAM). A problem arises, however, when a cache row with a flag bit of 1 is vacated from the cache to make space for a new cache row due to a read miss. In this case, the RAM is updated before the corresponding cache row is overwritten (Figure~\ref{fig:hardware:cache3}).
+
+\begin{figure}\centering
+\includegraphics[scale=0.7]{pdf/cache2}
+\caption{Cache and memory corresponding to Figure~\ref{fig:hardware:cache} following a CPU write operation to memory address 3. To save time, the RAM is not updated resulting in an updated cache but outdated RAM, denoted by a set flag bit.} \label{fig:hardware:cache2}
+\end{figure}
+
+\begin{figure}\centering
+\includegraphics[scale=0.7]{pdf/cache3}
+\caption{Cache and memory corresponding to Figure~\ref{fig:hardware:cache2} following a CPU read operation at memory address 5. Assuming that memory address 5 gets mapped to the first cache row, the updated information needs to be written back to RAM as the new RAM overwrites the existing cache row.} \label{fig:hardware:cache3}
+\end{figure}
+
+
+\subsection{Direct Mapping and  Associativity}
+
+There are a number of different strategies to determine which cache row can hold which memory address.
+
+In the case of direct mapping, each memory address may fit in precisely one cache row. An example of a direct mapping function is the modulo operation: the cache row is the remainder when the memory address is divided by the number of cache rows. Since the RAM is much bigger than the cache, each cache row is eligible to hold many memory addresses.
+
+Recall that when the CPU accesses a memory address the cache checks whether the requested address is at one of the cache rows. The direct mapping scheme simplifies this process, since the tag of precisely one cache row needs to be checked in order to determine if there is a hit or a miss. A disadvantage of direct mapping is that it may result in frequent cache misses. For example, a program where the CPU repeatedly accesses two memory addresses mapped to the same cache row will result in repeated cache misses (the contents of the cache row will alternate between the contents of the two addresses). In this case the cache hit-to-miss ratio is low, regardless of the number of cache rows.
+
+In contrast to direct mapping, fully associative mapping allows mapping any memory address to any cache row. The advantage over direct mapping is that the entire cache is used in any program, resulting in a high hit-to-miss ratio. A disadvantage is that checking whether the cache contains a specific memory address requires comparing the address to the tag bits of every single cache row.
+
+A more general strategy that includes both direct mapping and fully associate mapping  as special cases is $k$-associative mapping. In $k$-associative mapping, each memory address may be mapped to $k$ cache rows. If $k=1$, $k$-associativity reduces to direct mapping and if $k=\text{number of cache rows}$, $k$-associative mapping reduces to fully associative mapping. As $k$ increases, the hit-to-miss ratio increases, but the time it takes the cache to determine whether it has specific memory addresses increases. The optimal value of $k$ (in terms of program execution speed) depends on the size of the cache: a large cache leads to a small optimal value of $k$ and small cache leads to a high optimal value of $k$.
+
+\subsection{Cache Miss}
+
+In the case of a cache miss on a read request, the corresponding memory address is stored in a cache row, overwriting existing content. In the case of $k$-associative mapping with $k>1$, there are several cache rows where the new memory content may be stored. Selecting the best row (in terms of minimizing program execution time) requires predicting which of the possible $k$ rows will not be accessed by the CPU in the near future.
+
+The simplest cache miss strategy, called least recently used (LRU) stores the memory content in the cache row that contains the information that was least recently accessed by the CPU (out of the $k$ possible rows). The underlying assumption in this case is temporal locality. More complex strategies may lead to improved prediction of which of the cache rows will not be required in the near future, and consequentially lead to less cache misses and faster execution time. 
+
+\subsection{Cache Hierarchy}
+
+The description thus far assumed a single memory cache. In most cases, however, there are multiple cache levels (see Figure~\ref{fig:hardware:memory}) ordered from smallest and fastest (for example, L1) to larger and slower (for example, L3). The relationship between each two successive levels is similar to the relationship described above between the cache and the RAM. For example, a memory access may first trigger an attempt to read it from L1. If a L1-cache miss occurs, an attempt is made to read it from L2, and so on. The different cache levels may have different $k$-associativity and cache miss policies.
+
+\section{Multicores and Multiprocessors Computers}
+
+A significant trend during the past forty years has been the fabrication of faster and faster CPUs by manufacturing smaller scale transistors. This trend, called Moore's Law, has resulted in exponential growth in the number of transistors per chip and in the CPU clock rate (Definition~\ref{def:hardware:clock}). This trend has slowed down around the second decade of the 21st century as physical limitations make it increasingly hard to further minimize CPU components. This has lead to the popularity of multicore and multiprocessor technology as a tool to further speed up computer systems.
+
+Multicore technology fits multiple CPU cores into a single CPU, with each core capable of executing a sequence of instructions independently of the other cores. The cores may have independent cache, shared cache, or partially shared.  For example, each core may have its own L1 cache, but all cores may share the larger and slower L2 and L3 cache levels (see Figure~\ref{fig:hardware:core}). A typical 2015 personal computer has 4-8 cores. It is expected that the number of cores in a typical desktop or laptop will continue to increase as multicore technology advances.
+
+\begin{figure} \centering
+\includegraphics[scale=0.6]{pdf/core}
+\caption{An example of a single processor multicore system. The two cores have independent L1 caches but share the L2 and L3 caches and the RAM.} \label{fig:hardware:core}
+\end{figure}
+
+\begin{figure}\centering
+\includegraphics[scale=0.6]{pdf/core2}
+\caption{An example of a multi-processor multicore system. Both processors have independent cache but share the same RAM. } \label{fig:hardware:core2}
+\end{figure}
+
+Multiprocessor technology fits multiple single-core or multicore CPUs into a single computer (see Figure~\ref{fig:hardware:core2}). Note that in both the multicore and multiprocessor cases, the RAM is shared between all cores and processors, creating potential synchronization difficulties.  Multicore computers are cheaper, more energy efficient, and result in faster communication between computer components than multiprocessor computers. On the other hand, multiprocessor technology can scale up more easily than multicore technology leading to dozens or hundred of processors. Scaling up the number of cores in a CPU is more difficult due to physical constraints.
+
+As the number of processors and cores increases, the importance of parallel programs increase. Naive parallelism decomposes the computation to different parts and assigns each part to a different core or processor. In some cases, the program is not easily decomposable as some part of the computation may depend on other parts of the computation. 
+
+\section{Notes}
+
+Our discussion has been partial, focusing on concepts rather than details, and on issues that are relevant for computer programming and algorithms. Specifically, we have avoided discussing sophisticated CPU features such as pipeline and out of order execution, and sophisticated caching strategies such as branch prediction. With a few exceptions, we have avoided specifying precise figures such as the number of nanoseconds it takes the CPU to access RAM. These figures change significantly each year and the precise values are not as important as the underlying principles.
+
+Two textbooks containing additional details on computer hardware are \cite{Patterson2011,Hennessy2011}. Websites containing technical specification of hardware components are another useful source. Don Knuth's classic book \cite{Knuth1997} and its update \cite{Knuth2005} describe in detail an assembly language of an imaginary digital computer. Detailed descriptions of assembly languages of specific CPUs are available in technical manuals issued by the hardware manufacturer.

@@ -1,0 +1,922 @@
+\documentclass[handout]{beamer}
+%\documentclass{beamer}
+\usepackage{amsfonts,amsthm,amsmath}
+\usepackage{hyperref}
+\usepackage{mymath}
+
+\setbeamertemplate{note page}[plain]
+
+<<setup, echo=FALSE>>=
+opts_chunk$set(
+  background=c(1,1,1),
+	size="small",
+  fig.width=5,
+  fig.height=3,
+  comment="##",
+  prompt=FALSE,
+  fig.align="center",
+  fig.path="figs_slides/",
+  results="markup",
+	error=FALSE,
+  warning=FALSE,
+  message=FALSE)
+theme_set(theme_bw(base_size=10))
+theme_update(axis.title.x=element_text(vjust = -0.1))
+theme_update(axis.title.y=element_text(angle=90, vjust=0.12))
+theme_update(plot.title=element_text(vjust = 1))
+update_geom_defaults("point",aes(size=3))
+update_geom_defaults("line",aes(size=1))
+set.seed(1)
+@
+
+\title{Preprocessing Data}
+\author{Guy Lebanon}
+
+\begin{document}
+
+\frame{\titlepage }
+
+\begin{frame}
+\frametitle{Goals}
+\begin{itemize}[<+->]
+\item Learn how to handle missing data
+\item Learn how to handle outliers
+\item Learn when and how to transform data
+\item Learn standard data manipulations techniques
+\end{itemize}
+Module will be separated to 4 parts based on the four goals above.
+\end{frame}
+
+\begin{frame}
+\frametitle{Missing Data}
+Data may be missing for a variety of reasons. 
+\begin{itemize}[<+->]
+\item corrupted during its transfer or storage
+\item some instances in the data collection process were skipped due to difficulty or price associated with obtaining the data
+\end{itemize}
+Different features in different samples may be missing: first sample (row) may have third feature (column)  missing while the second sample may have the fifth feature missing.
+\end{frame}
+
+\begin{frame}
+\frametitle{Examples of Missing Data}
+\begin{itemize}[<+->]
+\item Recommendation systems recommend to users items from a catalog based on historical user rating. Often, there are a lot of items in the catalog and each user typically indicates their star ratings for only a small subset of them.
+\item In longitudinal studies some of the subjects may not be able to attend each of the surveys throughout the study period. The study organizers may also have lost contact with some of the subjects, in which case all measurements beyond a certain time point are missing.
+\item In sensor data, some of the measurements may be missing due to sensor failure, battery discharge, or electrical interference.
+\item In user surveys, users may choose to not respond to some of the questions for privacy reasons.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Missing Completely at Random}
+\begin{itemize}[<+->]
+\item If a variable (dataframe column) is as likely to be missing as all other variables, we say that it is MCAR.
+\item For example, in the case of users rating movies using 1-5 stars, we consider ratings of specific movies as dataframe columns and ratings associated with specific users as dataframe rows.  Since some movies are more popular than others, some columns are more likely to be missing than others, violateing the MCAR definition.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Missing at Random (MAR)}
+\begin{itemize}[<+->]
+\item MAR occurs when the probability that a variable is missing depends only on the other information available in the dataset.
+\item  For example, in a survey recording gender, race, and income, gender and race are not very objectionable questions, so we assume for now that the survey respondents answer these questions fully. The income question is more sensitive and users may choose to not respond for privacy reasons. 
+\item The tendency to report income or to not report income typically varies from person to person. If it only depends on gender and race, then the data is MAR. 
+\item If the decision whether to report or not report income depends also on other variables that are not in the dataframe (such as age or profession), the data is not MAR.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Handling Missing Data}
+Most methods are designed to work with fully observed data. Below are some general ways to convert missing data to non-missing data.
+\begin{itemize}[<+->]
+\item Remove all data instances (for example dataframe rows) containing missing values.
+\item Replace all missing entries with a substitute value, for example the mean of the observed instances of the missing variable.
+\item Estimate a probability model for the missing variable and replace the missing value with one or more samples from that probability model. 
+\end{itemize}
+In the case of MCAR, all three techniques above are reasonable in that they may not introduce systematic errors. In the more likely case of MAR or non-MAR data the methods above may introduce systematic bias into the data analysis process.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Missing Data and R}
+
+\begin{itemize}
+\item R represents missing data using the \texttt{NA} symbol.
+\item The function \texttt{is.na} returns a data structure having \texttt{TRUE} values where the corresponding data is missing and \texttt{FALSE} otherwise.
+\item \texttt{complete.cases()} returns a vector whose components are \texttt{FALSE} for all samples (dataframe rows) containing missing values and \texttt{TRUE} otherwise.
+\item \texttt{na.omit()} returns a new dataframe omitting all samples (dataframe rows) containing missing values.
+\item Some functions have an \texttt{na.rm} argument, which if set to \texttt{TRUE} changes the function behavior so that it proceeds to operate on the supplied data after removing all dataframe rows with missing values.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+The code below analyzes the dataframe \texttt{movies} in the \texttt{ggplot2} package, which contains 24 attributes (genre, year, budget, user ratings, etc.) for 58788 movies obtained from the website \href{http://www.imdb.com}{http://www.imdb.com} with some missing values. 
+
+<<engine="R",eval=TRUE>>=
+mean(movies$length)  # average length
+mean(movies$budget)  # average budget 
+# average budget (removing missing values)
+mean(movies$budget, na.rm = TRUE)  
+mean(is.na(movies$budget))  # frequency of non-missing budget
+@
+
+\end{frame}
+
+\begin{frame}[fragile]
+
+<<engine="R",eval=FALSE>>=
+moviesNoNA = na.omit(movies)
+qplot(rating, budget, data = moviesNoNA, size = I(1.2)) + 
+  stat_smooth(color = "red", size = I(2), se = F)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+moviesNoNA = na.omit(movies)
+qplot(rating, budget, data = moviesNoNA, size = I(1.2)) + 
+  stat_smooth(color = "red", size = I(2), se = F)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+
+<<engine="R",eval=FALSE>>=
+moviesNoNA = na.omit(movies)
+qplot(rating, votes, data = moviesNoNA, size = I(1.2))
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+moviesNoNA = na.omit(movies)
+qplot(rating, votes, data = moviesNoNA, size = I(1.2))
+@
+
+\end{frame}
+
+\begin{frame}
+\begin{itemize}[<+->]
+\item Number of votes (which can be used as a surrogate for popularity) tend to increase as the average rating increase.
+\item Spread in the number of votes increases with the average rating.
+\item Movies featuring the highest average ratings have a very small number of votes.
+\end{itemize}
+Note that users tend to see movies that they think they will like, and thus the observed ratings tend to be higher than ratings gathered after showing users random movies.
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Outliers}
+Two types of outliers
+\begin{itemize}[<+->]
+\item Corrupted values, for example, human errors during a manual process of entering measurements in a spreadsheet.
+\item Substantially unlikely values given our modeling assumptions, for example Black Monday stock crash on October 19, 1987, when the Dow Jones Industrial Average lost 22\% in one day.
+\end{itemize}
+In both cases, data analysis based on outliers may result in drastically wrong conclusions.
+\end{frame}
+
+
+\begin{frame}[fragile]
+
+<<engine="R",eval=FALSE>>=
+library(Ecdat)
+data(SP500, package = 'Ecdat')
+qplot(r500, 
+  main = "Histogram of log(P(t)/P(t-1)) for SP500 (1981-91)", 
+  xlab = "log returns", 
+  data = SP500)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+library(Ecdat)
+data(SP500, package = 'Ecdat')
+qplot(r500, 
+  main = "Histogram of log(P(t)/P(t-1)) for SP500 (1981-91)", 
+  xlab = "log returns", 
+  data = SP500)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+
+<<engine="R",eval=FALSE>>=
+qplot(seq(along = r500), 
+  r500, 
+  data = SP500, 
+  geom = "line", 
+  xlab = "trading days since January 1981", 
+  ylab = "log returns", 
+  main = "log(P(t)/P(t-1)) for SP500 (1981-91)")
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(seq(along = r500), 
+      r500, 
+      data = SP500, 
+      geom = "line", 
+      xlab = "trading days since January 1981", 
+      ylab = "log returns", 
+      main = "log(P(t)/P(t-1)) for SP500 (1981-91)")
+@
+\end{frame}
+
+\begin{frame}
+\frametitle{Robustness}
+Robustness describes a lack of sensitivity of data analysis procedures to outliers.  
+\begin{itemize}[<+->]
+\item The mean of $n$ numbers is a non-robust procedure while the median is a robust procedure. 
+\item Assuming a symmetric distribution of samples around 0, we expect the mean to be zero, or at least close to it. But, the presence of a single outlier (very positive value or very negative value) may substantially affect the mean calculation and drive it far away from zero, even for large $n$.
+\item In contrast the median will not change its value.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Dealing with Outliers}
+\begin{description}
+\item[Truncating.] Remove all values deemed as outliers. 
+\item[Winsorization.] Replace outliers with the most extreme of the remaining values.
+\item[Robustness.] Analyze the data using a robust procedure.
+\end{description}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Removing Outliers}
+To remove outliers we need to first detect them.
+\begin{itemize}[<+->]
+\item Values below the $\alpha$ percentile or above the $100-\alpha$ percentile for some small $\alpha>0$.
+\item Values more than $c$ standard deviations away from the mean.
+\item Chicken-and-egg problem since standard deviation and mean calculations above will be corrupted by outliers. One solution is computing the mean and standard deviation after removing the most extreme values (see next slide). Alternatively percentile (that are more robust) can be used.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+originalData = rnorm(20) 
+originalData[1] = 1000  
+sortedData = sort(originalData)
+originalData = originalData[3:18]  
+lowerLimit = mean(sortedData) - 5 * sd(sortedData)  
+upperLimit = mean(sortedData) + 5 * sd(sortedData)
+noOutlierInd = (lowerLimit < originalData) &
+               (originalData < upperLimit)
+dataWithoutOutliers = originalData[noOutlierInd]
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE>>=
+library(robustHD)
+originalData = c(1000, rnorm(10))
+print(originalData[1:5])
+print(winsorize(originalData[1:5]))
+@
+\end{frame}
+
+\begin{frame}
+\frametitle{Data Transformations: Skewness and Power Transformation}
+\begin{itemize}[<+->]
+\item In many cases, data is drawn from a highly-skewed distribution that is not well described by one of the common statistical distributions.
+\item A simple transformation may map the data to a form that is well described by common distributions, such as the Gaussian or Gamma distributions
+\item A suitable model can then be fitted to the transformed data (if necessary, predictions can be made on the original scale by inverting the transformation).
+\end{itemize}
+Power Transformation Family: replace non-negative data $x$ by
+\begin{align*}
+f_{\lambda}(x)=
+\begin{cases}
+  (x^{\lambda}-1)/\lambda & \lambda>0\\
+  \log x & \lambda=0 \\
+  -(x^{\lambda}-1)/\lambda & \lambda<0
+\end{cases} \qquad x>0, \quad \lambda\in\mathbb{R}.
+\end{align*}
+\end{frame}
+
+
+\begin{frame}
+\begin{itemize}[<+->]
+\item Intuitively, the power transform maps $x$ to $x^\lambda$, up to multiplication by a constant and addition of a constant.
+\item This mapping is convex for $\lambda > 1$ and concave for $\lambda < 1$.
+\item A choice of $\lambda < 1$  removes right-skewness (data has a heavy tail to the right) with smaller values of $\lambda$ resulting in a more aggressive removal of skewness. Similarly, a choice of $\lambda > 1$ removes left-skewness.
+\item Subtracting 1 and dividing by $\lambda$ makes $f_{\lambda}(x)$ continuous in $\lambda$ as well as in $x$.
+\item One way to select $\lambda$ is to try different values, graph the resulting histograms, and select one of them. There are also more sophisticated methods for selecting $\lambda$ based on the maximum likelihood method.
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE>>=
+print(diamonds[1:10,1:8])
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+diamondsSubset = diamonds[sample(dim(diamonds)[1], 1000),]
+qplot(price, data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+diamondsSubset = diamonds[sample(dim(diamonds)[1], 1000),]
+qplot(price, data = diamondsSubset)
+@
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(log(price), size = I(1), data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(log(price), size = I(1), data = diamondsSubset)
+@
+\end{frame}
+
+
+\begin{frame}
+\begin{itemize}[<+->]
+\item
+Power transformations are useful also for examining the relationship between two or more data variables. 
+\item
+The following plot shows the relationship between diamond price and diamond carat. It is hard to draw much information from that plot beyond the fact that there is a non-linear increasing trend. 
+\item
+Transforming both variables using a logarithm shows a striking linear relationship on a log-log scale. 
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(log(price), size = I(1), data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(log(price), size = I(1), data = diamondsSubset)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(carat, 
+      price, 
+      size = I(1), 
+      data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(carat, 
+      price, 
+      size = I(1), 
+      data = diamondsSubset)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(carat,
+      log(price),
+      size = I(1),
+      data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(carat,
+      log(price),
+      size = I(1),
+      data = diamondsSubset)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(log(carat),
+      price,
+      size = I(1),
+      data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(log(carat),
+      price,
+      size = I(1),
+      data = diamondsSubset)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(log(carat), 
+      log(price), 
+      size = I(1),
+      data = diamondsSubset)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(log(carat), 
+      log(price), 
+      size = I(1),
+      data = diamondsSubset)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE>>=
+library(MASS)
+print(Animals[1:12,])
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(brain, body, data = Animals)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+library(MASS)
+qplot(brain, body, data = Animals)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(brain, body, log = "xy", data = Animals)
+@
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(brain, body, log = "xy", data = Animals)
+@
+\end{frame}
+
+\begin{frame}
+\frametitle{Data Transformations: Binning}
+\begin{itemize}[<+->]
+\item A numeric variable represents real valued measurements whose values are ordered in a manner consistent with the natural ordering of the real line. Dissimilarity between two measurements $a,b$ is described by the Euclidean distance $|b-a|$. For example, height and weight are numeric variables.
+\item An ordinal variable represents measurements in a certain range $R$ for which we have a well defined order relation. Numeric variables are special cases of ordinal variables. For example, the seasons of the year are ordinal measurements.
+\item A categorical variable represents measurements that do not satisfy the ordinal or numeric assumption. For example, food items on a restaurant's menu are categorical variables.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\begin{itemize}[<+->]
+\item Binning (also known as discretization): taking a numeric variable $x\in \R$ (typically a real value, though it may be an integer), dividing its range into several bins, and replacing it with a number representing the corresponding bin.  
+\item It is useful to bin values in order to accomplish data reduction, improve scalability for big-data, or capture non-linear effects in linear models.
+\item Binarization is a special case (replaces a variable with either 0 or 1 depending on whether the variable is greater or smaller than a certain threshold).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\begin{itemize}[<+->]
+\item For example, suppose $x$ represent the tenure of an employee (in years) and ranges from 0 to 50. 
+\item A binning process may divide the range $[0,50]$ into the following ranges $(0,10], (10,20], \ldots, (41,50]$ and use corresponding replacement values of $5, 15, \ldots, 45$ respectively. 
+\item The notation $(a,b]$ corresponds to all values larger than $a$ and smaller or equal to $b$.  
+\end{itemize}
+Discretization in R can be done via the function \texttt{cut}.
+\end{frame}
+
+\begin{frame}
+\frametitle{Data Transformations: Indicator Variables}
+\begin{itemize}[<+->]
+\item Replace a variable $x$ (numeric, ordinal, or categorical) taking $k$ values with a binary $k$-dimensional vector $v$, such that \texttt{v[i]} (or $v_i$ in mathematical notation) is one if and only if $x$ takes on the $i$-value in its range. 
+\item Replace variable by vector that is all zeros, except for one component that equals one.
+\item Often, indicator variables are used in conjunction with binning: bin the variable into $k$ bins and then create a $k$ dimensional indicator variable. 
+\item High dimensional indicator vectors may be easily handled in computations by taking advantage of its extreme sparsity.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Uses of Indicator Variables}
+\begin{itemize}[<+->]
+\item Models for numeric or binary data cannot directly model ordinal or categorical data. Using indicator variables can mitigate this problem.
+\item Transform the data using several non-linear transformations (for example multiple power transformations), bin the transformed data, and create indicator vectors. Training a linear models on the such vectors may capture complex non-linear relationships.
+\item It is often much easier to compute with indicator functions since they are binary, and thus replacing numeric variables with indicator vectors may improve scalability. 
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Data Manipulations: Shuffling}
+\begin{itemize}[<+->]
+\item A common operation in data analysis is to select a random subset of the rows of a dataframe, with or without replacement.
+\item  \texttt{sample()} accepts a vector of values from which to sample (typically a vector of row indices), the number of samples, whether the sampling is done with or without replacement, and the probability of sampling different values.
+\item \texttt{sample(k,k)} generates a random permutation of order \texttt{k}.
+\item After obtaining the indices that we wish to sample. we form a new array or dataframe containing the sampled rows of the original dataframe. 
+\end{itemize}
+
+<<engine="R",eval=TRUE>>=
+D = array(data = seq(1, 20, length.out = 20), dim = c(4, 5))
+D_shuffled = D[sample(4, 4),]
+@
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Data Manipulations: Partitioning}
+\begin{itemize}[<+->]
+\item 
+In some cases, we need to partition the dataset's rows into two or more collection of rows.
+\item  Generate a random permutation of $k$ objects (using \texttt{sample(k,k)}), where $k$ is the number of rows in the data, and then divide the permutation vector into two or more parts based on the prescribed sizes, and new dataframes whose rows correspond to the divided permutation vector.
+\end{itemize}
+
+<<engine="R",eval=TRUE>>=
+D = array(data = seq(1, 20, length.out = 20), dim = c(4, 5))
+rand_perm = sample(4,4)
+first_set_of_indices = rand_perm[1:floor(4*0.75)]
+second_set_of_indices = rand_perm[(floor(4*0.75)+1):4]
+D1 = D[first_set_of_indices,]
+D2 = D[second_set_of_indices,]
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Tall Data}
+
+\begin{verbatim}
+2015/01/01  apples  200
+2015/01/01  oranges 150
+2015/01/02  apples  220
+2015/01/02  oranges 130
+\end{verbatim}
+
+\begin{itemize}[<+->]
+\item Data in tall format is an array or dataframe containing multiple columns where one or more columns act as a unique identifier and an additional column represents value.
+\item This format is convenient for adding new records incrementally (e.g., adding sales transactions as they occur), and for removing old records.
+\item A disadvantage of tall data format is that it not easy for conducting analysis or summarizing it (e.g., computing average daily sales).
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Wide Data}
+\begin{verbatim}
+Date       apples  oranges
+--------------------------
+2015/01/01  200     150
+2015/01/02  220     130
+\end{verbatim}
+
+\begin{itemize}[<+->]
+\item Represents in multiple columns the information that tall data holds in multiple rows
+\item Simpler to analyze
+\item Harder to add/remove entries
+\end{itemize}
+
+
+
+When converting tall data to wide data, we need to specify ID variables that define the row and column structure (date and item in the example above). 
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Reshaping Data}
+R package reshape2 converts data between tall and wide formats. The \texttt{melt} function accepts a dataframe in a wide format, and the indices of the columns that act as unique identifiers (remaining columns act as measurements or values) and returns a tall version of the data. 
+
+<<engine="R",eval=TRUE>>=
+print(smiths)
+smiths_tall = melt(smiths, id = 1)
+print(smiths_tall[1:4,])
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+\texttt{acast}/\texttt{dcast} is the inverse of \texttt{melt}. 
+
+The arguments are a dataframe in wide form, a formula $a \sim b \sim \cdots \sim$ where each of $a,b,\ldots$ represents a list of variables whose values will be displayed along the dimensions of the returned array or dataframe ($a$ for rows, $b$ for columns, etc.), and a function \texttt{fun.aggregate} that aggregrates multiple values into a single value.
+
+
+<<engine="R",eval=FALSE>>=
+qplot(total_bill,
+      tip,
+      facets = sex~time,
+      size = I(1.5),
+      data = tips)
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+qplot(total_bill,
+      tip,
+      facets = sex~time,
+      size = I(1.5),
+      data = tips)
+@
+
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+tipsm = melt(tips, id = c("sex","smoker","day","time","size"))
+dcast(tipsm,  # Mean of measurement variables broken by sex
+      sex~variable, 
+      fun.aggregate = mean)
+@
+
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+tipsm = melt(tips, id = c("sex","smoker","day","time","size"))
+dcast(tipsm,  # Mean of measurement variables broken by sex
+      sex~variable, 
+      fun.aggregate = mean)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+# Number of occurrences for measurement variables broken by sex
+dcast(tipsm, 
+      sex~variable, 
+      fun.aggregate = length)
+@
+
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+# Number of occurrences for measurement variables broken by sex.
+dcast(tipsm, 
+      sex~variable, 
+      fun.aggregate = length)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+# Average total bill and tip for different times
+dcast(tipsm, 
+      time~variable, 
+      fun.aggregate = mean)
+@
+
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+# Average total bill and tip for different times
+dcast(tipsm, 
+      time~variable, 
+      fun.aggregate = mean)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+# Similar to above with breakdown for sex and time:
+dcast(tipsm, 
+      sex+time~variable, 
+      fun.aggregate = length)
+@
+
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+# Similar to above with breakdown for sex and time:
+dcast(tipsm, 
+      sex+time~variable, 
+      fun.aggregate = length)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+# Similar to above, but with mean and added margins
+dcast(tipsm, 
+      sex+time~variable, 
+      fun.aggregate = mean, 
+      margins = TRUE)
+@
+
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+# Similar to above, but with mean and added margins
+dcast(tipsm, 
+      sex+time~variable, 
+      fun.aggregate = mean, 
+      margins = TRUE)
+@
+\end{frame}
+
+
+\begin{frame}[fragile]
+Observations:
+\begin{enumerate}[<+->]
+\item On average, males pay higher total bill and tip than females.
+\item Males pay more frequently than females.
+\item Dinner bills and tips are generally higher than lunch bills and tips.
+\item Males pay disproportionately more times for dinner than they do for lunch (this holds much less for females).
+\item Even accounting for (4) by conditioning on paying for lunch or dinner, males still pay higher total bills and tips than females.
+\end{enumerate}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Split-Apply-Combine}
+Many data analysis operations on dataframes can be decomposed to three stages: 
+\begin{enumerate}[<+->]
+\item splitting the dataframe along some dimensions to form smaller arrays or dataframes,
+\item applying some operation to each of the smaller arrays or dataframes, and
+\item combining the results of the application stage into a single meaningful array or dataframe. 
+\end{enumerate}
+Repeatedly programming all three stages whenever we need to compute a data summary may be tedious and can lead to errors. The plyr package automates this process, letting the analyst concentrate on the data analysis rather than the three stages.
+\end{frame}
+
+\begin{frame}[fragile]
+The plyr package implements the following functions that differ in the type of input arguments they receive and the type of output they provide.
+
+\vspace{0.5in}
+\begin{tabular}{|l|llll|} \hline
+\hspace{.1in}  output & array & dataframe & list & discarded\\
+input &&&&\\ \hline
+array & \texttt{aaply} & \texttt{adply} & \texttt{alply} & \texttt{a\_ply}\\
+dataframe & \texttt{daply} & \texttt{ddply} & \texttt{dlply} & \texttt{d\_ply}\\
+list & \texttt{laply} & \texttt{ldply} & \texttt{llply} & \texttt{l\_ply} \\ \hline
+\end{tabular}
+
+\vspace{0.5in}
+
+Arguments: data, dimensions/columns used to to split the data, function to execute in the apply stage.
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE>>=
+library(plyr)
+names(baseball)
+# count number of players recorded for each year
+bbPerYear = ddply(baseball, "year", "nrow")
+head(bbPerYear)
+@  
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+qplot(x = year, y = nrow,
+      data = bbPerYear, geom = "line", 
+      ylab="number of player seasons")
+@  
+
+<<engine="R",eval=TRUE,echo=FALSE>>=
+qplot(x = year,
+      y = nrow,
+      data = bbPerYear,
+      geom = "line", 
+      ylab="number of player seasons")
+@  
+\end{frame}
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+<<engine="R",eval=TRUE>>=
+# compute mean rbi (batting attempt resulting in runs)
+# for all years. Summarize is the apply function, which
+# takes as argument a function that computes the rbi mean
+bbMod=ddply(baseball, "year", summarise, 
+            mean.rbi = mean(rbi, na.rm = TRUE))
+qplot(x = year, y = mean.rbi, data = bbMod, 
+      geom = "line", ylab = "mean RBI")
+@  
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+# add a column career.year which measures the number of years
+# passed since each player started batting
+bbMod2 = ddply(baseball,
+               "id",
+               transform,
+               career.year = year - min(year) + 1)
+# sample a random subset 3000 rows to avoid over-plotting
+bbSubset = bbMod2[sample(dim(bbMod2)[1], 3000),]
+qplot(career.year, 
+      rbi, data = bbSubset, 
+      size = I(0.8), 
+      geom = "jitter", 
+      ylab = "RBI", 
+      xlab = "years of playing") + 
+  geom_smooth(color = "red", se = F, size = 1.5)
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+# add a column career.year which measures the number of years passed
+# since each player started batting
+bbMod2 = ddply(baseball, "id", transform,
+               career.year = year - min(year) + 1)
+# sample a random subset 3000 rows to avoid over-plotting
+bbSubset = bbMod2[sample(dim(bbMod2)[1], 3000),]
+qplot(career.year, 
+      rbi, data = bbSubset, 
+      size = I(0.8), 
+      geom = "jitter", 
+      ylab = "RBI", 
+      xlab = "years of playing") + 
+  geom_smooth(color = "red", se = F, size = 1.5)
+@  
+\end{frame}
+
+\begin{frame}[fragile]
+The ozone dataset contains a 3-dimensional array of ozone measurements varying by latitude, longitude, and time.
+
+<<engine="R",eval=FALSE>>=
+library(plyr)
+latitude.mean = aaply(ozone, 1, mean)
+longitude.mean = aaply(ozone, 2, mean)
+time.mean = aaply(ozone, 3, mean)
+longitude = seq(along = longitude.mean)
+qplot(x = longitude, 
+      y = longitude.mean, 
+      ylab = "mean ozone level",
+      geom="line")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+library(plyr)
+latitude.mean = aaply(ozone, 1, mean)
+longitude.mean = aaply(ozone, 2, mean)
+time.mean = aaply(ozone, 3, mean)
+longitude = seq(along = longitude.mean)
+qplot(x = longitude, 
+      y = longitude.mean, 
+      ylab = "mean ozone level", geom="line")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+latitude = seq(along = latitude.mean)
+qplot(x = latitude, 
+      y = latitude.mean, 
+      ylab = "mean ozone level",
+      geom = "line")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+latitude = seq(along = latitude.mean)
+qplot(x = latitude, 
+      y = latitude.mean, 
+      ylab = "mean ozone level",
+      geom = "line")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=FALSE>>=
+months = seq(along = time.mean)
+qplot(x = months, 
+      y = time.mean, 
+      geom = "line", 
+      ylab = "mean ozone level", 
+      xlab = "months since January 1985")
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<engine="R",eval=TRUE,echo=FALSE,fig.height=4>>=
+months = seq(along = time.mean)
+qplot(x = months, 
+      y = time.mean, 
+      geom = "line", 
+      ylab = "mean ozone level", 
+      xlab = "months since January 1985")
+@
+\end{frame}
+
+
+
+\begin{frame}
+\begin{itemize}[<+->]
+\item Ozone has a clear minimum mean ozone level at longitude 19 and latitude 12
+\item Ozone level has an interesting temporal periodicity superimposed with a slight increasing trend.
+\item The periodicity coincides with the annual season cycle (each period is 12 months)
+\item The functions in the \texttt{plyr} package are very general and simplify the coding of many data analysis tasks.
+\end{itemize}
+\end{frame}
+
+\end{document}
+
+
+
+
+
+
+<<eval=F>>=
+plot(x = dataframe$col_1, y = dataframe$col_2)
+title(main = "figure title")  # add title
+@
+
+
+
+
+\begin{frame}
+\frametitle{Handling Missing Data}
+\begin{itemize}[<+->]
+\item 
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{}
+  
+\end{frame}
+
+

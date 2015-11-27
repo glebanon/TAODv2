@@ -1,0 +1,831 @@
+%---------------------------------------------
+\section{Data Persistence and Serialization}
+
+Data persistence is the process of saving information for later usage, potentially after the program terminates its execution. Data serialization is a process that converts information to a sequence of bytes for transmission to a file or to across a computer network. We already saw one form of persistence earlier in this book: saving data in text files and reading data from text files. Using such save and load functionality, a program can make its information persist and available after the original program terminates. 
+
+Below, we introduce JSON, a widely used method for data serialization based on text format. Many programming languages, including C++, Java, Python, and R support saving data in JSON format and reading from it. The following two sections introduce two binary data serialization methods: Pickle (for Python) and Java Object Serialization.
+
+%---------------------------------------------
+\subsection{JSON}
+
+JSON (JavaScript Object Notation, usually pronounced Jason) is a data serialization format based on human-readable text. JSON's origin is in encoding information for transmission between internet browsers and servers. Recently, JSON became popular also in transmitting and saving data in data analysis application. Its advantage over binary formats and other text-formats (like XML or tab separated format) is the ease with which humans can read and comprehend JSON data. 
+
+JSON encodes the following objects: 
+\begin{itemize}
+\item strings (using double quotation marks, with backslash as an escape character)
+\item  numbers (using decimal or exponential notation), (c) boolean (true or false)
+\item arrays (comma separated list surrounded by square brackets), and 
+\item key-value maps (comma separated list of key:value pairs surrounded by curly braces).
+\end{itemize} 
+
+Several JSON requirements and properties are listed below. 
+\begin{itemize}
+\item JSON uses the value null to denote an empty or unknown value. 
+\item The keys in key-value maps must be have string values. 
+\item JSON ignores whitespace (space, tab, line feed, carriage return) around or between its elements. Indentation is often used to enhance the readability of JSON data.
+\item JSON elements may be nested, for example a key-value map may have as one of its values an array holding additional key-value maps.
+\end{itemize}
+
+For example, consider the example below of a JSON format representing the name, date of birth, address, and phone number of a person. Note that the outer object is a map structure. The \texttt{address} key of that map is a new map object and the \texttt{phoneNumbers} key is an array of maps.
+ 
+\begin{verbatim}
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "yearOfBirth": 1975,
+  "address": {
+    "streetAddress": "100 Boren Avenue North",
+    "city": "Seattle",
+    "state": "WA",
+    "postalCode": "98109"
+  },
+  "phoneNumbers": [
+    { "type": "home", "number": "(404) 555-2314" },
+    { "type": "office",  "number": "(404) 555-1321" }
+  ]
+}
+\end{verbatim}
+
+Many languages provide support for parsing JSON format, for example Python's \texttt{json} package provides the function \texttt{loads} for parsing JSON format into a Python object and \texttt{dumps} for converting a Python object into a JSON formatted string. Note that JSON is very similar to legitimate Python code, making Python particularly easy for interacting with Python code. 
+
+<<dataJson1, engine="python">>=
+import json
+
+# creating a Python object (map) holding a person's address
+personRecord = {
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "yearOfBirth": 1975,
+  "address": {
+    "streetAddress": "100 Main Street",
+    "city": "Los Angeles",
+    "state": "CA",
+    "postalCode": "90021"
+  },
+  "phoneNumbers": [
+    { "type": "home", "number": "(444) 555-1234" },
+    { "type": "office",  "number": "(444) 555-1235" }
+  ]
+}
+
+# convert the Python object into a JSON string
+personRecordJSON = json.dumps(personRecord)
+personRecordReconstructed = json.loads(personRecordJSON)
+
+# print the firstName field of the reconstructed Python object
+print(personRecordReconstructed['firstName'])
+@
+
+\subsection{Pickle and Shelves in Python}
+
+Python's pickle module is an alternative to JSON serialization that converts Python objects to serialized binary form. Binary serialization is more effieicnt than text serialization in terms of space, but JSON's text serialization has the advantage of being compatible across multiple programming languages and being human readable.
+
+<<dataPickle1, engine="python">>=
+import pickle
+patients = {
+  "age" : [25.2, 35.4, 52.1],
+  "height" : [68.1, 62.5, 60.5],
+  "weight" : [170.2, 160.7, 185.5]
+}
+# binary serialization
+serialized_patients = pickle.dumps(patients)  
+# deserialization
+patients_reconstructed = pickle.loads(serialized_patients)
+@
+
+Pandas offer convenient functionality to serialize and deserialize dataframes using pickle. Specifically, the pandas functions to\_pickle and read\_pickle convert a dataframe to pickle serialization and vice verse.
+
+<<dataPickle2, engine="python">>=
+import pandas as pd
+patients = {
+  "age" : [25.2, 35.4, 52.1],
+  "height" : [68.1, 62.5, 60.5],
+  "weight" : [170.2, 160.7, 185.5]
+}
+patients_DF = pd.DataFrame(patients)
+# serialize and save to binary disk
+patients_DF.to_pickle('patients.txt')  
+# read binary serialization to Python object
+patients_reconstructed=pd.read_pickle('patients.txt')   
+print(patients_reconstructed)
+@
+
+The Python module cpickle implements the same algorithm as pickle but in C rather than in Python, and thus may run faster. Switching between pickle and cpickle can be conveniently done by inserting or removing the line \texttt{import cpickle as pickle} at the beginning of the Python program. 
+
+Shelves is a module that provides persistent dictionary objects whose values can be any Python object that can be pickled. The programmer can conveniently organize multiple pickled objects for easy future retrieval using the dictionary keys. The data is stored on disk using the adydbm database module.
+
+The code below stores data as a shelves object.
+
+<<dataShelves1, engine="python">>=
+import shelve
+patients_DF = {
+  "age" : [25.2, 35.4, 52.1],
+  "height" : [68.1, 62.5, 60.5],
+  "weight" : [170.2, 160.7, 185.5]
+}
+records = shelve.open('patients')
+records['patients'] = patients_DF 
+records.close()
+@
+
+The code below reads the saved data from the shelves object.
+
+<<dataShelves2, engine="python">>=
+import shelve
+records = shelve.open('patients')
+patients_reconstructed = records['patients']
+del records['patients']  # delete value from disk
+records.close()
+@
+
+\subsection{Java Object Serialization}
+
+Java's serialization framework provides a convenient mechanism to serialize arbitrary objects into a binary sequence. To serialize an object using this framework, the object in question must implement the serializable interface. Many Java classes that hold data (for example, lists of strings or hash tables mapping strings to doubles) implement that interface. New classes defined by the programmer in many cases implement the interface without any additional work (though it is important to denote this by adding \texttt{implements Serializable} after the class name). In other cases, or in cases where a customized serialization is needed, the serialization and deserialization methods need to be implemented for the object in question.
+
+Below is an example of serializing and deserializing a list of records. The first code segment below is an implementation of a class that holds the records and the second code segment serializes a list of records and saves it in a binary file. The third file deserializes the file back into a Java object.
+
+<<javaSerialize1, eval=FALSE>>=
+import java.io.Serializable;
+
+public class PatientInfo implements Serializable {
+  private String name;
+  private int age;
+  public PatientInfo(String a_name, int an_age) {
+    this.name = a_name;
+    this.age = an_age;
+  }
+  public int getAge() {
+    return age;
+  }
+  public void setAge(int an_age) {
+    this.age = an_age;
+  }
+  public String getName() {
+    return name;
+  }
+  public void setName(String a_name) {
+    this.name = a_name;
+  }
+}
+@
+
+<<javaSerialize2, eval=FALSE>>=
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PatientPersist {
+  public static void main(String[] args) {
+    String filename = "patients";
+    PatientInfo patient1 = new PatientInfo("John Smith", 33);
+    PatientInfo patient2 = new PatientInfo("Jane Doe", 30);
+    List PatientList = new ArrayList();
+    PatientList.add(patient1);
+    PatientList.add(patient2);
+    FileOutputStream fos = null;
+    ObjectOutputStream out = null;
+    try {
+      fos = new FileOutputStream(filename);
+      out = new ObjectOutputStream(fos);
+      out.writeObject(PatientList);
+      out.close();
+    } catch (IOException ex) {
+      ex.printStackTrace();
+    }
+  }
+}
+@
+
+<<javaSerialize3, eval=FALSE>>=
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class GetPatientInfo {
+  public static void main(String[] args) {
+    String filename = "patients";
+    List PatientsInfo = null;
+    FileInputStream fis = null;
+    ObjectInputStream in = null;
+    try {
+      fis = new FileInputStream(filename);
+      in = new ObjectInputStream(fis);
+      PatientsInfo = (ArrayList) in.readObject();
+      in.close();
+    } catch (IOException ex) {
+      ex.printStackTrace();
+    } catch (ClassNotFoundException ex) {
+      ex.printStackTrace();
+    }
+    System.out.println(PatientsInfo.size() + " patients found");
+  }
+}
+@
+
+Compiling the three files above and executing the programs above produces the following output. 
+
+\begin{verbatim}
+java PatientPersist
+java GetPatientInfo
+
+## 2 patients found
+\end{verbatim}
+
+%---------------------------------------------
+\section{Hierarchical Data Format}
+
+Hierarchical Data Format (HDF) is a file format designed to store groups of large multidimensional numeric arrays. It was originally developed at the National Center for Supercomputing Applications and it is currently in its fifth generation, named HDF5. HDF has a permissible open-source license (BSD) and many programming languages provide API for accessing data stored in HDF format including C++, Java, R, Python, and R.
+
+HDF files are self-describing in the sense that they hold meta-data describing the structure and content of the file. A single file can contain complex objects built from multidimensional arrays such as color images, astronomical measurements, and time series. Accessing specific content within HDF content (for example a particular portion of a multidimensional array) is typically faster than a similar access operation in relational (SQL) database, but NoSQL databases may provide additional speedup.
+
+\subsection{Accessing HDF from Python using PyTables}
+
+Python offers a particularly convenient mechanism for accessing data in HDF files using the PyTables module. Specifically, PyTables contains functions for accessing HDF data using NumPy's API for accessing dataframes in memory. As a result, a programmer can work with large data stored on disk, in much the same way as working with dataframes in memory (however, a performance penalty naturally applies to operating out of memory). PyTables brings data from disk to memory lazily (data is moved from disk to memory only when it is needed), and operates intermediate operations on the data in-memory, which provides a significant speedup. At the end of the program, the HDF files are updated and the relevant memory content is cleared. 
+
+The example below shows an elementary interaction with HDF files using PyTables.
+
+<<pytables1, engine="python",eval=0>>=
+from tables import *
+# creating an object representing table rows
+class Person(IsDescription):
+  name = StringCol(16)  # 16 character string
+  age = Int32Col()
+# opening a HDF5 file
+h5file = open_file("people.h5", mode = "w", title = "personnel")
+# definining a group in the HDF4 file
+group = h5file.create_group("/", "records", "names and ages")
+# defining a table in the group
+table = h5file.create_table(group, "Personnel1", 
+                            Person, "Personnel Table 1")
+Person = table.row
+for ind in xrange(10):
+  Person['name'] = 'John Doe ' + str(ind)
+  Person['age'] = 20 + ind
+  Person.append()
+for ind in xrange(10):
+  Person['name'] = 'Jane Smith ' + str(ind)
+  Person['age'] = 20 + ind
+  Person.append()
+table.flush()  # update disk
+
+# getting a pointer to table
+table = h5file.root.records.Personnel1
+# running a query against file
+arr = [x['name'] for x in table.iterrows() if 
+  x['age'] > 25 and x['age'] < 28]
+print(arr)
+
+## ['John Doe 6', 'John Doe 7', 'Jane Smith 6', 'Jane Smith 7']
+@
+
+%---------------------------------------------
+\section{The Relational Database Model}
+
+Relational database management systems (RDBMS) complex computer programs that simplify the process of storing and retrieving data, in particular when the data is large and there are several users storing and retrieving data from the same database. Relational databases typically provide the following capabilities.
+\begin{enumerate}
+\item Relational databases allow users to create a new database and specify its schema, which is a specification of the type of data that is normally allowed to reside in the database.	
+\item Relational databases let users query the database using a specific query language, called structured query language (SQL). The RDBMS process the query and returns to the user the corresponding portion of the data (or sometimes a computation based on the data).
+\item Relational databases are good at storing large amounts of data (typically on the hard disk) and are relatively efficient in executing queries over large datasets.
+\item Relational databases enable multiple users to store and access the data, ensuring that the results of the operations are identical to a corresponding sequence of requests that are performed independently.
+\end{enumerate}
+
+The last property above refers is sometime referred to as atomicity. Each individual request (deletion, addition, modification, or querying) is executed in its entirety before other requests are processed\footnote{Two or more requests are sometimes executed in parallel if it is guaranteed that the end results remain the same.}. The scheduler manages such concurrent requests, and places locks that prevent additional requests from being processed until the previous requests are completed.
+
+We describe below the relational model that is used in RDBMS, and then describe the SQL query language. We conclude this section with a description of how different programs can interact with databases. 
+
+\subsection{The Relational Model}
+
+The relational model is based on two dimensional tables, called relations. Each relation has rows, which are called tuples or records, and columns, which describe properties of tuples. The columns are usually annotated by descriptive names known as attributes. The values in specific row-column combinations are known as fields. The values in the different columns are constrained to be within a certain domain (for example, string, integer, or floating point). The name of the relation, the attributes, and the column domain constraints form the relation schema. 
+
+For example, consider the \texttt{retail-1} relation in Figure~\ref{fig:data:retail1} that contains a list of items described by their name, ID, and retail price. The columns in this case may be constrained to lie in the string, integer, and floating point domains, respectively. 
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+name & ID & retail price \\
+\hline
+T Shirt &  2314 & 15.95\\
+Jeans &  1492 & 39.95\\
+Dress &  9824 & 50.00\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Relation \texttt{retail-1} describing items for sale in a store. The columns are restricted to lie in the string, integer, and floating point domains respectively.} \label{fig:data:retail1}
+\end{figure}
+
+\begin{defn}
+A set of columns form a unique key if their values uniquely identify the record. In other words, at most a single record can have any specific value of the unique key.
+\end{defn}
+
+\begin{defn}
+A primary key is similar to a unique key, except that it may not have Null values and any relation can have at most a single primary key.
+\end{defn}
+
+Since the relation columns are referred to by the attributes (column names), and the rows are referred to by the primary key the ordering of the rows and columns is immaterial. 
+
+For example, in the \texttt{retail-1} relation above, the column corresponding to the ID attribute may be assigned as the primary key. There can be at most one tuple associated with any ID value.
+
+Keys may span multiple columns, in which case the precise combination of column may appear only once. For example, tuples in the \texttt{retail-2} relation (see  Figure~\ref{fig:data:retail2}) correspond to clothes of different sizes that may have the same ID. In this case, the key should be the column combination (ID, size).
+
+\begin{figure}
+	\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+name & ID & size & retail price \\
+\hline
+T Shirt &  2314 & Large & 15.95\\
+T Shirt &  2314 & Small & 13.95\\
+Jeans &  1492 & Medium & 39.95\\
+Jeans &  1492 & Small & 34.95\\
+Dress &  9824 & Medium & 50.00\\
+Dress &  9824 & Small & 50.00\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Relation \texttt{retail-2} is similar to \texttt{retail-1}, but it admits clothes of different sizes with the same ID. In this case the column combination (ID, size) is the primary key. There can be at most a single tuple with the same (ID, size) values.} \label{fig:data:retail2}
+\end{figure}
+
+A relational database may contain more than a single relation. One relation can refer to a tuple in a target relation based using the primary key of the target relation. 
+
+\begin{defn}
+A foreign key in a relation is a set of columns whose values correspond to a primary key in another relation.
+\end{defn}
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+vendor name &  phone \\ \hline
+AB Importers & 404-555-1234 \\
+Dresses Inc. & 404-555-3297\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Relation \texttt{vendor-1} contains phone numbers of different vendors. The primary key is the vendor name.} \label{fig:data:vendor1}
+\end{figure}
+
+For example, \texttt{vendor-1} relation in Figure~\ref{fig:data:vendor1} describes d vendor phone numbers and may co-exist with the \texttt{retail-2} relation in Figure~\ref{fig:data:retail2}. The primary key is the vendor name attribute.
+
+
+The \texttt{vendor-2} relation in Figure~\ref{fig:data:vendor2} describes wholesale and vendor information of different items and may co-exist with both \texttt{retail-2} and \texttt{vendor-1} relations. The primary key of  \texttt{vendor-2} is (name, ID). The relation \texttt{vendor-2} also has a foreign key vendor name linking it to the relation  \texttt{vendor-1} in which vendor name is a primary key. 
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+name & ID & size & vendor name & vendor price \\
+\hline
+T Shirt &  2314 & Large & AB importers & 11.95\\
+T Shirt &  2314 & Small & AB importers & 10.95\\
+Jeans &  1492 & Medium & AB importers & 33.95\\
+Jeans &  1492 & Small & AB importers & 31.95\\
+Dress &  9824 & Medium & Dresses Inc. & 35.00\\
+Dress &  9824 & Small & Dresses Inc. & 35.00\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Relation \texttt{vendor-2} containing vendor name and wholesale prices of different items. The primary key (ID, size), which is also a foreign key linking the tuples with the tuples of relation \texttt{retail-2} in Figure~\ref{fig:data:retail2}.} \label{fig:data:vendor2}
+\end{figure}
+
+
+\subsection{ACID} \label{sec:data:ACID}
+
+ACID stands for Atomicity, Consistency, Isolation, Durability. These are four properties that guarantee that database transactions are processed reliably. 
+
+\begin{description}
+\item[Atomicity] Atomicity requires that each transaction succeeds in its entirety or fails (in which case the database is unchanged). In other words, it is impossible for a transaction to be execute in part due to errors, crashes, or power outages. 
+\item[Consistency] Consistency requires that each transaction maintains the database in a valid or consistent state. This includes (a) ensuring that relation keys remain unique and non-null (entity integrity), (b) fields are in the prescribed domain (domain integrity), and (c) foreign keys correctly refer to primary keys in other tables (referential integrity).
+\item[Isolation] Isolation requires that the concurrent execution of transactions results in the same system state that would be obtained if the transactions were executed sequentially.
+\item[Durability] Durability requires that the effect of executed transactions persist, even in the event of an error, a power outage, or a crash.
+\end{description}
+
+
+\subsection{SQL Language}
+
+Structured Query Language (SQL\footnote{SQL is often pronounced SEQUEL.}) is a programming language specifically designed for managing relational databases. SQL statements can create relations, insert new data into an existing relation, modify existing data, and retrieve data. The precise specification of SQL is not always adhered to by the various commercial relational databases, making SQL code not completely portable across different database systems. Nevertheless, most relational databases support basic SQL functionality and many simple SQL programs work identically across different database systems. The examples below are executed on PostgreSQL (see Section~\ref{sec:data:sql-programs}), but they should execute similarly on other standard database programs.
+
+SQL code is separated into statements, each of which is separated into clauses. SQL ignores whitespace and SQL keywords are not case sensitive (uppercase is typically used). SQL statements are terminated by semicolons.
+
+\subsubsection{Data Definition}
+
+We start by describing below basic SQL statements for creating and managing tables. The statement \texttt{CREATE TABLE TABLE\_NAME (Z);} creates a new table named \texttt{TABLE\_NAME} having attributes defined by \texttt{Z} - a comma separated list of \texttt{ATTRIBUTE\_NAME DATA\_TYPE CONSTRAINT} objects.
+
+For example, the following statement creates a table named \texttt{LOCATIONS} with three attributes: an integer \texttt{ID}, and \texttt{CITY},  \texttt{STATE}, and \texttt{COUNTRY} - all character arrays of length 20. 
+
+\begin{verbatim}
+CREATE TABLE LOCATIONS(ID INTEGER PRIMARY KEY, 
+					   CITY CHAR(20), 
+					   STATE CHAR(20), 
+					   COUNTRY CHAR (20) NOT NULL);
+\end{verbatim} 
+%CREATE TABLE LOCATIONS(ID INTEGER PRIMARY KEY,CITY CHAR(20),STATE CHAR(20), COUNTRY CHAR (20) NOT NULL);
+
+The \texttt{PRIMARY KEY} constraint above states that the \texttt{ID} attribute is a primary key of the table. The \texttt{NOT NULL} constraint specifies that Null values that represent missing values in SQL are not allowed for the \texttt{COUNTRY} attribute. Common data types in SQL are listed in Figure~\ref{data:sql:types} and constraints are listed in Figure~\ref{data:sql:constraints}.
+
+\begin{figure}
+\begin{tabular}{|l|l|}
+\hline
+data type & description \\ \hline
+\texttt{CHAR(n)} & fixed length character array of length \texttt{n}\\
+\texttt{VARCHAR(n)} & variable length character array with length less than or equal to \texttt{n}\\
+\texttt{INTEGER} & Integer\\
+\texttt{FLOAT} & floating point value\\
+\texttt{DATE} & date\\
+\texttt{TIME} & time of day\\
+\texttt{TIMESTAMP} & time of day and date\\ \hline
+\end{tabular}
+\caption{Common data types in SQL}
+\label{data:sql:types}
+\end{figure}
+
+\begin{figure}
+\begin{tabular}{|l|l|}
+\hline
+constraint & description \\ \hline
+\texttt{NOT NULL} & attribute cannot store a Null value\\
+\texttt{UNIQUE} & attribute cannot have duplicate values in multiple rows\\
+\texttt{PRIMARY KEY} & attribute stores a primary key\\
+\texttt{FOREIGN KEY} & attribute stores a foreign key\\
+\texttt{DEAFULT X} & assigns default value to attribute\\
+\hline
+\end{tabular}
+\caption{Common data types in SQL}
+\label{data:sql:types}
+\end{figure}
+
+An existing table may be modified using the \texttt{ALTER TABLE X} statement where \texttt{X} encodes the alteration. For example, the SQL code below adds a new attribute to the existing table \texttt{LOCATIONS}.
+
+\begin{verbatim}
+ALTER TABLE LOCATIONS ADD COORDINATES INT;
+\end{verbatim}
+
+The SQL statement \texttt{DROP TABLE X} deletes the table \texttt{X} from the database.
+
+\subsubsection{Data Manipulations}
+
+Data manipulations statements add or remove rows from a specific table. The statement \texttt{INSERT INTO TABLE\_NAME VALUES W} inserts a record \texttt{W} into the table \texttt{TABLE\_NAME}. For example, the following statements create and alter the \texttt{LOCATIONS} table and then populate it with three records. 
+
+\begin{verbatim}
+CREATE TABLE LOCATIONS(ID INTEGER PRIMARY KEY, 
+					   CITY CHAR(20), 
+					   STATE CHAR(20), 
+					   COUNTRY CHAR (20) NOT NULL);
+ALTER TABLE LOCATIONS ADD COORDINATES INT;
+INSERT INTO LOCATIONS VALUES (13, 'Los Angeles',
+                              'CA','USA',32143324);
+INSERT INTO LOCATIONS VALUES (21, 'Chicago',
+                              'IL','USA',12324323);
+INSERT INTO LOCATIONS VALUES (54, 'San Juan',
+                              NULL,'Puerto Rico',87430123);
+\end{verbatim}
+The \texttt{NULL} keyword in the last statement indicates a missing value. 
+
+After the above sequence of commands the table has the following values.
+
+\begin{verbatim}
+ id | city        | state |   country    | coordinates 
+----+----------------------+--------------------------
+ 13 | Los Angeles | CA    | USA          |    32143324
+ 21 | Chicago     | IL    | USA          |    12324323
+ 54 | San Juan    |       | Puerto Rico  |    87430123
+\end{verbatim}	
+
+The statement \texttt{UPDATE TABLE\_NAME SET X=Y WHERE Z=W} updates the table \texttt{TABLE\_NAME} as follows: the record whose \texttt{Z} attribute equals \texttt{W} is modified so that its \texttt{X} attributes equals \texttt{Y}. 
+
+For example, the following SQL code modified the above table so that \texttt{'San Juan'} is modified to \texttt{'San-Juan'}. Note that we use a primary key attribute for the attribute defined by the \texttt{WHERE} clause (primary or unique key attributes are a convenient way to access a specific record in the table).
+
+\begin{verbatim}
+UPDATE LOCATIONS SET CITY='San-Juan' WHERE ID=54;
+\end{verbatim}
+
+After the command above is executed the table \texttt{LOCATIONS} will have the following values. 
+
+\begin{verbatim}
+ id | city        | state |   country    | coordinates 
+----+----------------------+--------------------------
+ 13 | Los Angeles | CA    | USA          |    32143324
+ 21 | Chicago     | IL    | USA          |    12324323
+ 54 | San-Juan    |       | Puerto Rico  |    87430123
+\end{verbatim}	
+
+The statement \texttt{DELETE FROM TABLE\_NANE WHERE X=Y} removes the record from the table \texttt{TABLE\_NAME} whose \texttt{X} attribute equals \texttt{Y}. For example, the statement below removes the third entry.
+
+\begin{verbatim}
+DELETE FROM LOCATIONS WHERE ID=54;	
+
+ id | city        | state |   country    | coordinates 
+----+----------------------+--------------------------
+ 13 | Los Angeles | CA    | USA          |    32143324
+ 21 | Chicago     | IL    | USA          |    12324323
+\end{verbatim}
+
+
+\subsubsection{Basic Queries}
+
+Perhaps the most frequently used SQL statement is \texttt{SELECT}, which queries the database and returns a list of records and attributes. The statement \texttt{SELECT X FROM Y WHERE Z} returns attributes specified by \texttt{X} from table \texttt{Y} that satisfy the constraint specified by \texttt{Z}.
+
+For example, consider the table \texttt{LOCATIONS} above. The following query retrieves the CITY attribute for all records.
+
+\begin{verbatim}
+SELECT CITY FROM LOCATIONS
+
+         city         
+----------------------
+ Los Angeles         
+ Chicago             
+(2 rows)
+\end{verbatim}
+
+Multiple attributes can be retrieved by specifying a tuple, as below.
+
+\begin{verbatim}
+SELECT CITY,STATE FROM LOCATIONS;
+
+         city         |        state         
+----------------------+----------------------
+ Los Angeles          | CA                  
+ Chicago              | IL                  
+(2 rows)
+\end{verbatim}
+
+The wildcard \texttt{*} can be used to refer to all attributes.
+
+\begin{verbatim}
+SELECT * FROM LOCATIONS;	
+ id |   city       |    state   | country  | coordinates 
+----+----------------------+----------------------+-----
+ 13 | Los Angeles | CA         | USA      |    32143324
+ 21 | Chicago     | IL         | USA      |    12324323
+(2 rows)
+\end{verbatim}
+
+The \texttt{WHERE} clause can specify constraints on attribute values using boolean algebra. For example, the following query retrieves all coordinates, whose state value equals CA and country value equals USA.
+
+\begin{verbatim}
+SELECT COORDINATES FROM LOCATIONS 
+   WHERE STATE='CA' AND COUNTRY='USA';
+ coordinates 
+-------------
+    32143324
+(1 row)
+\end{verbatim}
+
+The examples above summarize the basic usage of the SELECT statement. Some additional functionalities are listed below.
+
+\begin{enumerate}
+\item Appending AS W to an attribute name in the select clause renames the retrieved column. For example, \texttt{SELECT CITY AS TOWN from LOCATIONS;} returns the \texttt{CITY} attribute for all records under the new column name \texttt{TOWN}.
+\item Boolean algebra in the \texttt{WHERE} clause include multiple logical conditions and attributes, for example 
+\begin{verbatim}
+SELECT * FROM LOCATIONS 
+   WHERE (COORDINATES>2000000 OR COORDINATES>3000000) 
+      AND COUNTRY='USA';
+\end{verbatim}
+\item The WHERE clause supports flexible template matching of string values using the \texttt{LIKE} keyword. This is useful in cases where strings may appear in the database in more than a single canonical form.
+\item the statement \texttt{X IS NULL} or \texttt{X is NOT NULL} can be used in the WHERE clause to restrict the retrieved records to only missing or only non-missing values of \texttt{X}.
+\item Adding a clause \texttt{ORDER BY T} at the end of a SELECT statement orders the retrieved records by the value of the attribute \texttt{T}. If \texttt{T} is two attribute names separated by a comma the first attribute name is used to sort with the second attribute name used to break ties. 
+\item The statement \texttt{SELECT DISTINCT X FROM Y WHERE Z} is similar to \texttt{SELECT X FROM Y WHERE Z}, except that duplicates are eliminated.
+\item The statement \texttt{SELECT X FROM Y WHERE Z GROUP BY Q;} is similar to \texttt{SELECT X FROM Y WHERE Z;}, but the retrieved records will have an ordering that groups records with identical values of \texttt{Q} together.
+\end{enumerate}
+
+
+\subsubsection{Queries Involving Multiple Tables} \label{sec:data:sql-mult}
+
+We can use the \texttt{SELECT} statement to query from multiple tables simultaneously. To illustrate this concept we consider the LOCATIONS table above and create an additional table ORDERS, which stores retail orders. 
+
+
+\begin{verbatim}
+CREATE TABLE ORDERS(ORDER_ID INTEGER PRIMARY KEY, 
+					   CITY CHAR(20), 
+					   PRODUCT CHAR(20), 
+					   QUANTITY INTEGER);
+INSERT INTO ORDERS VALUES (5,'Chicago','CAMERAS',23);
+INSERT INTO ORDERS VALUES (8,'Chicago','BATTERIES',53);
+
+ order_id |         city  |       product   | quantity 
+----------+---------------+-----------------+----------
+        5 | Chicago       | CAMERAS         |       23
+        8 | Chicago       | BATTERIES       |       53
+(2 rows)
+\end{verbatim}
+
+Note that both the ORDERS table and the LOCATIONS table have a CITY column, which holds names of cities.
+
+To query from multiple tables we use a SELECT statement with the WHERE clause having multiple table names separated by commas. The attribute names in the SELECT statement can correspond to attribute names in any of the tables, but in case some tables have overlapping names the attributes may be disambiguated by prefixing the attribute name by the table name followed by a period. For example \texttt{ORDERS.CITY} refers to the CITY attribute in the table \texttt{ORDERS}. 
+
+For example, the following query retrieves all combinations of STATE, PRODUCT, QUANTITY from the tables LOCATIONS and ORDERS whose CITY attributes agree. Note that the \texttt{WHERE} clause below has disambiguated CITY attribute names.
+
+\begin{verbatim}
+SELECT STATE,PRODUCT,QUANTITY 
+   FROM LOCATIONS, ORDERS
+      WHERE  LOCATIONS.CITY=ORDERS.CITY;
+
+        state         |       product        | quantity 
+----------------------+----------------------+----------
+ IL                   | CAMERAS              |       23
+ IL                   | BATTERIES            |       53
+(2 rows)
+\end{verbatim}
+
+The keywords UNION, INTERSECT, and EXCEPT can be used to execute the set operation of union, intersection, set-minus (see TAOD Volume 1, Appendix A) between results returned from separate SELECT statements. For example, the statement below retrieves all cities in Illinois from LOCATIONS that have more than 40 orders in the table ORDERS. Note that since there are two separate SELECT clauses we did not need to disambiguate the attribute name CITY.
+
+\begin{verbatim}
+(SELECT CITY from LOCATIONS WHERE STATE='IL') 
+   INTERSECT 
+(SELECT CITY FROM ORDERS WHERE QUANTITY>40);
+
+         city         
+----------------------
+Chicago             
+(1 row)
+\end{verbatim}
+
+
+\subsubsection{Subqueries}
+
+Since SELECT statements return a list of attribute values they can be used in a functional form as a nested component of an outer SELECT statement. The nesting can occur in different parts of the outer SELECT clause, including the WHERE clause and the FROM clause.
+
+For example, the SQL code below returns all states from the ORDERS table corresponding to cities having fewer than 50 orders (in the table ORDERS). The keyword \texttt{IN} before the nested SELECT clause matches a value to a set of possible values. 
+
+\begin{verbatim}
+SELECT STATE FROM LOCATIONS 
+   WHERE CITY IN (SELECT CITY FROM ORDERS WHERE QUANTITY<50);
+
+        state         
+----------------------
+ IL                  
+(1 row)
+\end{verbatim}
+
+\subsubsection{Joins}
+
+Section~\ref{sec:data:sql-mult} showed how to construct SQL queries that apply to multiple tables. Join statements in SQL are convenient short hand that simplifies such complex queries. 
+
+
+The statement \texttt{T1 CROSS JOIN T2} creates a new table having attributes that correspond to attributes from table \texttt{T1} and attributes from the table \texttt{T2}. A new record is created for every possible combination of rows from the two tables. Thus, if \texttt{T1} has 5 columns and 2 rows (as does the table LOCATIONS) and \texttt{T2} has 4 columns and 4 rows, the table \texttt{T1 CROSS JOIN T2} will have 9 columns and $2\cdot 2=4$ rows. The SQL code below displays the \texttt{ID}, and \texttt{ORDERE\_ID} columns of the resulting table.
+
+\begin{verbatim}
+SELECT ID, ORDER_ID FROM (LOCATIONS CROSS JOIN ORDERS);
+
+ id | order_id 
+----+----------
+ 13 |        5
+ 21 |        5
+ 13 |        8
+ 21 |        8
+(4 rows)
+\end{verbatim}
+
+The statement \texttt{T1 JOIN T2 ON X=Y} creates a new table that combines all rows of \texttt{T1} with all rows of \texttt{T2} for whose value of \texttt{X} (on \texttt{T1}) agrees with the value of \texttt{Y} (on \texttt{T2}). \texttt{JOIN} is sometimes called \texttt{INNER JOIN} to differentiate it from \texttt{CROSS JOIN}.
+
+For example, the following code matches records in LOCATIONS with ORDERS that have identical CITY attribute. Note that this gives the same result as the SELECT query in Section~\ref{sec:data:sql-mult}. 
+
+\begin{verbatim}
+SELECT STATE,PRODUCT,QUANTITY 
+   FROM (LOCATIONS JOIN ORDERS 
+      ON LOCATIONS.CITY=ORDERS.CITY);
+
+        state         |       product        | quantity 
+----------------------+----------------------+----------
+ IL                   | CAMERAS              |       23
+ IL                   | BATTERIES            |       53
+(2 rows)
+\end{verbatim}
+
+Three additional types of joins are described below.
+
+\begin{description}
+\item[\texttt{T1 LEFT OUTER JOIN T2 ON X}.] First, an inner join is performed on X. Then, for each row of \texttt{T1} that does not satisfy the join condition with any row of T2, a new row is added with null values in columns of T2. The resulting table has at least one row for each row of T1.
+\item[\texttt{T1 RIGHT OUTER JOIN T2 ON X}.] First, an inner join is performed on X. Then, for each row of \texttt{T2} that does not satisfy the join condition with any row of T1, a new row is added with null values in columns of T1. The resulting table has at least one row for each row of T2.
+\item[\texttt{T1 FULL OUTER JOIN T2 ON X}.] First, an inner join is performed on X. Then, for each row of \texttt{T1} that does not satisfy the join condition with any row of T2, a new row is added with null values in columns of T2. Then, for each row of \texttt{T2} that does not satisfy the join condition with any row of T1, a new row is added with null values in columns of T1. The resulting table has at least one row for each row of T2.
+\end{description}
+
+For example, the SQL code below show the difference between left outer join and right outer join on the tables \texttt{LOCATIONS} and \texttt{ORDERS}. Since \texttt{LOCATIONS} has two cities (Los Angeles and Chicago), while \texttt{ORDERS} has a single city (Chicago) the left outer join will have an additional row where CAis not matched on any of the rows of \texttt{ORDERS}.
+
+\begin{verbatim}
+SELECT STATE,PRODUCT,QUANTITY
+  FROM (LOCATIONS LEFT OUTER JOIN ORDERS 
+     ON LOCATIONS.CITY=ORDERS.CITY);
+
+        state         |       product        | quantity 
+----------------------+----------------------+----------
+ IL                   | CAMERAS              |       23
+ IL                   | BATTERIES            |       53
+ CA                   |                      |         
+(3 rows)
+
+SELECT STATE,PRODUCT,QUANTITY 
+   FROM (LOCATIONS RIGHT OUTER JOIN ORDERS 
+      ON LOCATIONS.CITY=ORDERS.CITY);
+
+        state         |       product        | quantity 
+----------------------+----------------------+----------
+ IL                   | CAMERAS              |       23
+ IL                   | BATTERIES            |       53
+(2 rows)
+\end{verbatim}
+
+\subsection{PostgreSQL, MySQL, and Other Commercial Databases} \label{sec:data:sql-programs}
+
+The most popular commercial relational database programs are made by Oracle, SAP, and Microsoft. The two most popular open source relational database systems are PostgreSQL and MySQL. Commercial database programs as well as PostgreSQL and MySQL can scale up to hold multiple terabytes of data. Scaling up to very large dataset sizes typically requires partitioning the rows of the table into multiple disks, a process known as sharding. Most standard database programs can handle heavy workloads with many users concurrently query the database.
+
+PostgreSQL, often abbreviated as ``Postgres'', is a free and open source relational database management system (RDBMS) with a commercial friendly license. It is easy to install on many operating systems including Windows, Linux, and Mac OS. It is fully ACID compliant (see Section~\ref{sec:data:ACID}). Postgres is also extensible and has many extensions developed by third parties including support for spatial and geographic data (for example geographic coordinates or geographic regions). PostgreSQL is used by many large corporations and is also available on the Amazon Web Services (AWS) cloud computing platform. 
+
+MySQL is a free open source popular relational database program that is currently owned by Oracle. Its GNU General Public License is less appealing for commercial use than PostgreSQL, though MySQL has several paid versions available as well. Like PostgreSQL it scalable to large dataset sizes and it powers many high profile websites. MySQL is generally ACID compliant, though it has a less rigorous approach to robustness and data integrity.
+
+Both PostgreSQL and MySQL typically run as a separate process and a client application program access that database using interprocess communication (sometimes using network protocol). In other words, the application that queries or updates the database runs as a separate process and must interact with the database process using a service call. 
+SQLite is another open source ACID compliant database that takes a different approach. In contrast to PostgreSQL and MySQL, SQLite is typically an integral part of the client process. Because of its small size and simple access, SQLite is used by internet browsers (Google Chrome, Mozilla Firefox), mobile operating systems (Google Android, Apple iOS), and applications (Skype, Adobe Reader). 
+
+\subsection{Working with Databases: Shells and Programmatic APIs}
+
+The sections above demonstrate relational databases and SQL through an interactive prompt. Many relational databases provide an interactive shell where the user can type database creation, alternation, or query commands and see the results that they produce. For example, the examples above were typed into the PostgreSQL interactive shell.
+
+In reality, databases are often queried and updated from computer programs written in languages such as C++, Java, Python, and R. Each of these languages (and many other languages as well) has libraries that support querying and updating relational databases. Below, we illustrate that process by calling SQLite from a Python program. Calling PostgreSQL or MySQL from Python is similar but requires an extra initial step of authenticating and establishing a connection with the database process or database server (if the database resides on a networked machine that is separated from the machine running the client program). Calling databases from other languages require some adaptation but is mostly similar.
+
+The Python library \texttt{sqlite3} provides convenient access to an in-memory SQLite database. After establishing a connection object, the next step is to create a string representing the database command (for example table creation, table update, or query). The connection object then sends the string for execution by the database and returns the results back to the Python program. The following code illustrates this process by first creating a table, then adding two rows, and then sending a query and displaying the results. Note that the strings below are encoding using the \texttt{""""} delimiters to capture commands that reside on multiple lines.
+
+%<<dataSQLlite,engine="python",eval=TRUE>>=
+\begin{verbatim}
+import sqlite3
+import pandas.io.sql
+# create a connection
+con=sqlite3.connect(':memory')
+# create a table
+createStmt = """
+  CREATE TABLE LOCATIONS(ID INTEGER PRIMARY KEY, 
+ 					     CITY CHAR(20), 
+					     STATE CHAR(20), 
+					     COUNTRY CHAR (20) NOT NULL);"""
+con.execute(createStmt)
+con.commit()
+
+# add two rows to the table
+data = [(13, 'Los Angeles', 'CA', 'USA'), 
+        (21, 'Chicago', 'IL', 'USA')]
+addStmt = "INSERT INTO LOCATIONS VALUES (?, ?, ?, ?)"
+con.executemany(addStmt, data)
+con.commit()
+
+# query the databse
+data = con.execute('select * from LOCATIONS')
+print(data.fetchall())
+
+## [(13, u'Los Angeles', u'CA', u'USA'), 
+##  (21, u'Chicago', u'IL', u'USA')]
+
+print(data.description)
+
+## (('ID', None, None, None, None, None, None), 
+##  ('CITY', None, None, None, None, None, None), 
+##	('STATE', None, None, None, None, None, None), 
+##	('COUNTRY', None, None, None, None, None, None))
+\end{verbatim}
+
+Above, the SQL query returned to Python an object \texttt{data} that holds both the table (via \texttt{data.fetchall()}) and the column names (via \texttt{data.description}). The Python Pandas package contains a convenient way for creating a Python dataframe from that object.
+
+\begin{verbatim}
+DF = pandas.io.sql.read_frame('select * from LOCATIONS', con)
+print(DF)
+
+##    ID         CITY STATE COUNTRY
+## 0  13  Los Angeles    CA     USA
+## 1  21      Chicago    IL     USA
+\end{verbatim}
+
+%---------------------------------------------
+\section{Object Oriented Databases}
+
+% 10/11
+
+\subsection{Python's ZODB}
+
+% 10/12
+
+\subsection{Object Relational Databases}
+
+% 10/11
+
+%---------------------------------------------
+\section{Memory Mapping}
+
+% 10/12
+
+%---------------------------------------------
+\section{NoSQL Databases}
+
+% 10/13-10/20
+
+% MongdoDB, DynamoDB, Cassandra, etc.
+
+
+%-------------------------------------------------------
+\section{Notes}
+
+
+Additional details on PyTables is available at \href{http://pytables.github.io/usersguide/}{http://pytables.github.io/usersguide/}

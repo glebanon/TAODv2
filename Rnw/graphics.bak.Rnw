@@ -1,0 +1,555 @@
+\label{chapter:graphics}
+
+Graphing data is key in effective data analysis. It is useful for the following purposes:
+\begin{enumerate}
+\item initially investigating datasets,
+\item confirming or refuting data models, and
+\item elucidating mathematical or algorithmic concepts.
+\end{enumerate}
+
+We explore different types of data graphs using the R programming language which has excellent graphics functionality. We focus on two R graphics packages: \texttt{graphics} and \texttt{ggplot2}. The \texttt{graphics} package contains the original R graphics functions and is installed and loaded into scope by default. Its functions are easy to use and produce a variety of useful graphs. The \texttt{ggplot2} package provides alternative graphics functionality based on Wilkinson's grammar of graphics \cite{Wilkinson2005}. To install it and bring it to scope type \texttt{install.packages('ggplot2')} and then \texttt{library(ggplot2)}. The syntax of \texttt{ggplot2} is considerable simpler than the syntax of the \texttt{graphics} package and the resulting graphs feature more careful selection of default values such as axis scales and legend position. The main disadvantage of the \texttt{ggplot2} package is that it takes more time to render the graphs.
+
+%---------------------------------------------------------------------------------------
+\section{Datasets}
+
+We use three datasets to explore data graphs. The first is the \texttt{faithful} dataframe which is a part of the \texttt{datasets} package that is installed and loaded by default. The \texttt{faithful} dataframe has two variables: eruption time and waiting time to next eruption (both in minutes) of the Old Faithful geyser in Yellowstone National Park, Wyoming, USA.
+
+<<graphics0>>=
+names(faithful)  # variable names
+summary(faithful)  # variable summary
+@
+
+The second dataset, \texttt{mtcars}, is also a part of the \texttt{datasets} package. It contains information concerning multiple car models extracted from 1974 \emph{Motor Trend} magazine. The variables include model name, weight, horsepower, fuel efficiency, and transmission type.
+
+<<graphics01>>=
+summary(mtcars)
+@
+
+The third dataset, \texttt{mpg}, is a part of the \texttt{ggplot2} package.  It is similar to \texttt{mtcars} in that it contains fuel economy and other attributes but it is larger and it contains newer car models extracted from the website \href{http://fueleconomy.gov}{http://fueleconomy.gov}.
+
+<<graphics02>>=
+names(mpg)
+@
+
+More information on any of these datasets may be obtained by typing \texttt{help(X)} with \texttt{X} corresponding to the dataframe name when the appropriate package is in scope.
+
+%---------------------------------------------------------------------------------------
+\section{Graphics and ggplot2 Packages}
+
+The \texttt{graphics} package contains two types of functions: high-level functions and low-level functions. High level functions produce a graph while low level functions modify an existing graph. The function \texttt{plot} is the primary high level function. It takes as arguments one or more dataframe columns representing data and other arguments that modify its default behavior.
+
+Other high-level functions in the \texttt{graphics} package are more specialized and produce a specific type of graph, such as \texttt{hist} (for producing histograms) or \texttt{curve} (for producing curves). We do not explore many high level functions as they are generally less convenient to use than the corresponding functions in the \texttt{ggplot2} package.
+
+Examples of low-level functions in the  \texttt{graphics} package are:
+
+\begin{itemize}
+\item \texttt{title} adds or modifies title and axes' labels,
+
+\item  \texttt{grid} adds a grid to the current figure,
+
+\item \texttt{legend} displays a legend connecting symbols, colors, or line types to descriptive strings, and
+
+\item \texttt{lines} adds a line plot to an existing graph.
+\end{itemize}
+
+The two main functions in the \texttt{ggplot2} package are \texttt{qplot} and \texttt{ggplot}. The \texttt{qplot} function accepts as arguments one or more data variables assigned to the variables \texttt{x}, \texttt{y}, and \texttt{z} (in some cases only one or two of these arguments are specified). The more complex \texttt{ggplot} accepts as arguments a dataframe and an object returned by the \texttt{aes} function which accepts data variables as arguments. In contrast to \texttt{qplot}, \texttt{ggplot} does not create a graph. Instead it returns an object that may be modified by adding layers to it using the \texttt{+} operator. After appropriate layers are added the object may be saved to disk or printed using the \texttt{print} function. The layer addition functionality applies to \texttt{qplot} as well.
+
+The \texttt{ggplot2} package provides automatic axes labeling and legends. To take advantage of this feature the data must reside in a dataframe with informative column names. We emphasize this approach as it provides more informative dataframes column names, in addition to simplifying the R code.
+
+The following code displays a scatter plot using the \texttt{graphics} package and adds a title to the graph.
+
+<<eval=F>>=
+plot(x=DF$speed.values,y=DF$acc.values)
+title(main="speed vs acceleration")
+@
+
+To create a similar graph using the \texttt{qplot} function use the following code.
+
+<<eval=F>>=
+print(qplot(x=speed.values,y=acc.values,data=DF, main="speed vs. acceleration",geom="point"))
+@
+
+The corresponding \texttt{ggplot} code appears below.
+
+<<eval=F>>=
+# store the data to be graphed inside a dataframe
+DF=data.frame(speed=speed.values,acc=acc.values)
+sp=ggplot(DF,aes(x=speed,y=acc),data=DF)+geom_point()
+print(sp)
+@
+
+In the following sections we describe several different types of data graphs.
+
+%---------------------------------------------------------------------------------------
+\section{Strip Plots}
+
+The simplest way to graph one-dimensional numeric data is to graph them as points in a two-dimensional space, with one coordinate corresponding to the index of the data point, and the other coordinate corresponding to its value.
+
+To plot a strip plot using the \texttt{graphics} package, call \texttt{plot} with a single numerical dataframe column. The resulting x-axis indicates the row number, and the y-axis indicates the numeric value. The \texttt{xlab}, \texttt{ylab}, and \texttt{main} parameters modify the x-label title, y-label title, and figure title.
+
+<<graphics1>>=
+plot(faithful$eruptions,xlab="sample number",ylab="eruption times (min)",main="Old Faithful Eruption Times")
+@
+
+We conclude from the figure above that Old Faithful has two typical eruption times --- a long eruption time around 4.5 minutes, and a short eruption time around 1.5 minutes. It also appears that the order in which the dataframe rows are stored is not related to the eruption variable.
+
+%---------------------------------------------------------------------------------------
+\section{Histograms}
+
+An alternative way to graph one dimensional numeric data is using the histogram graph. The histogram divides the range of numeric values into bins and displays the number of data values falling within each bin. The width of the bins influences the level of details. Very narrow bins maintain all information but are hard to draw conclusion from, as the histogram becomes equivalent to a sorted list of data values. Very wide bins lose information due to overly aggressive smoothing. A good bin width balances information loss with useful data aggregation. Unlike a strip plot that contains all the original information, histograms discard the ordering of the data points, and it treats samples in the same bin as identical.
+
+The \texttt{hist} function within the  \texttt{graphics} package can be used to display a histogram. See \texttt{help(hist)} for more details on the different parameters, and in particular for assistance on controlling the bin widths.
+
+<<graphicsHist1,fig.height=2.5>>=
+# plot a histogram with 20 bins
+hist(faithful$eruptions,breaks=20,xlab="eruption times (min)",ylab="count",main="")
+@
+
+We see a nice correspondence between the above histogram and the strip plot in the previous section. There are clearly two typical eruption times -- one around 2 minutes and one around 4.5 minutes.
+
+To graph a histogram with the \texttt{ggplot2} package, call \texttt{qplot} with two parameters: a dataframe column (assigned to the \texttt{x} argument) and a name of the dataframe variable (assigned to the \texttt{data} argument). The two axes are automatically labeled based on the names of the variables that they represent.
+
+<<graphics3,fig.height=2.5>>=
+print(qplot(x=waiting, data=faithful, binwidth=3,main="Waiting time to next eruption (min)"))
+@
+
+To create a histogram with the \texttt{ggplot} function, we pass an object returned from the \texttt{aes} function, and add a histogram geometry layer using the \texttt{+} operator.
+
+<<graphics4,fig.height=2.5>>=
+print(ggplot(faithful,aes(x=waiting)) + geom_histogram(binwidth=1))
+@
+
+Traditionally, the $y$ axis in a histogram displays counts. An alternative is to display the frequency by surrounding the data variable with \texttt{..} on both sides. In this case, the height of each bin times its width equals the count of samples falling in the bin divided by the total number of counts. As a result, the area under the graph is 1 making it a legitimate probability density function (refer to Chapters~\ref{chap:prob}-\ref{chap:rv}  for a formal definition). This probability interpretation is sometimes advantageous, but it may be problematic in that it masks the total number of counts.
+
+<<graphics5,fig.height=2.5>>=
+print(ggplot(faithful, aes(x=waiting,y=..density..)) + geom_histogram(binwidth=4))
+@
+
+Note that selecting a narrower bandwidth produces a less smooth histogram as compared to the previous figure. Selecting the best bandwidth is difficult and usually requires some trial and error.
+
+An alternative to the histogram is the smoothed histogram. Denoting the data with $x^{(1)},\ldots,x^{(n)}$ the smoothed histogram is the function $\hat f:\R\to\R_+$
+\[\hat f(x) = \frac{1}{n}\sum_{i=1}^n K_h\left(x,x^{(i)}\right)\]
+where the kernel function $K_h$ is typically
+\begin{itemize}
+  \item symmetric $K_h(x,y)=K_h(y,x)$;
+    \item non-negative $K_h(x,y)\geq 0$;
+    \item translation  invariant $K_h(x,y)=K_h(x+t,y+t)$;
+    \item normalized $\int_{-\infty}^{\infty} K(x,y)\, dx=1$; and
+    \item increasing as $|x-y|$ decreases.
+\end{itemize}
+
+The parameter $h$ typically controls the spread and is small for highly peaked functions and large for diffuse functions. Mathematically, this is often captured via the following scaling property
+\[ K_h(x) = h^{-1} K_1(x/h).\]
+One popular example of a kernel function is the Gaussian kernel (we show in Chapter~\ref{chap:RVexamp} that is satisfies the above requirements)
+\begin{align} \label{eq:graphics:kernelGaussian}
+K_h(x,y)=\exp(-(x-y)^2/(2\pi h^2)) / (\sqrt{2\pi} h), \qquad h>0.
+\end{align}
+The last figure in this chapter graphs this kernel function by drawing $h_0(x)=K_h(x,0)$ for different values of $h$ (denoted as $\sigma$ in that graph).
+
+Identifying the functions $g_i(x)\defeq K_h(x,x^{(i)})$ we see that $\hat f$ is an average of $g_i$, $i=1,\ldots,n$. Since the functions $g_i(x)$ are centered at $x^{(i)}$ and decay with the distance between $x$ and $x^{(i)}$, $\hat f$ will be high in areas containing many data points and low in areas containing a few data points. The role of the denominator $n$ is to ensure that the integral of $\hat f$ is 1, making $\hat f$ a formal estimator of the underlying distribution.
+
+We demonstrate the smoothed histogram using the simple numeric dataset $\{2,3,6,7\}$, and the kernel function \eqref{eq:graphics:kernelGaussian}. The value of $h$ is controlled via the \texttt{adjust} parameter that assigns $h$ to be the corresponding multiple of an automatic value determined by R. For example, setting \texttt{adjust=1} uses R's automatic $h$ value, while setting \texttt{adjust=2} multiplies R's automatic $h$ value by 2.
+
+In the first graph we use a small $h$ value, causing $\hat f$ to exhibit four clearly separated peaks --- each corresponding to a separate $g_i$ function. This choice of a small $h$ corresponds to a histogram with a very narrow bin-width.
+
+<<graphicsSmoothedHist1,fig.height=2.5>>=
+print(qplot(x=c(2,3,6,7),y=..density.., geom=c("density"),kernel="gaussian",adjust=0.05,xlab="",xlim=c(0,9)))
+@
+
+Increasing the value of $h$ by increasing the \texttt{adjust} parameter diffuses the $g_i$ functions, causing them to overlap more.
+
+<<graphicsSmoothedHist2,fig.height=2.5>>=
+print(qplot(x=c(2,3,6,7),y=..density.., geom=c("density"),kernel="gaussian",adjust=0.2,xlab="",xlim=c(0,9)))
+@
+
+Increasing the value of $h$ further aggregates the four peaks into two peaks, each reponsible for a corresponding pair of nearby points.
+
+<<graphicsSmoothedHist3,fig.height=2.5>>=
+print(qplot(x=c(2,3,6,7),y=..density.., geom=c("density"),kernel="gaussian",adjust=0.5,xlab="",xlim=c(0,9)))
+@
+
+Finally, further increasing the value of $h$ results in nearly constant $g_i$ functions and a nearly constant $\hat f$ function. This corresponds to a histogram with very wide bins in which all points fall in the same bin.
+
+<<graphicsSmoothedHist4,fig.height=2.5>>=
+print(qplot(x=c(2,3,6,7),y=..density.., geom=c("density"),kernel="gaussian",adjust=10,xlab="",xlim=c(0,9)))
+@
+
+
+The figure below contrasts a histogram with a smoothed histogram using the \texttt{ggplot} function. To enhance the visualization we made the histogram semi-transparent using the \texttt{alpha} argument (takes a value between 0 and 1 indicating the  transparency levels).
+
+<<graphics6,fig.height=2.5>>=
+print(ggplot(faithful, aes(x=waiting,y=..density..)) + geom_histogram(alpha=0.3)+geom_density(size=1.5,color="red"))
+@
+
+The smoothed histogram is often more intuitive and informative than the non-smoothed histogram. Just as the bin-width selection is crucial for obtaining an informative histogram, selecting the kernel function is very important. For example, for the case \eqref{eq:graphics:kernelGaussian}, selecting a value $h$ that is too large will have the effect of over-smoothing, causing the resulting $\hat f$ to be nearly constant. On the other, hand selecting a value of $h$ that is too small will have an under-smoothing effect, and result in a wiggly and noisy curve.
+
+%---------------------------------------------------------------------------------------
+\section{Scatter Plots}
+
+A scatter plot graphs the relationships between two numeric variables. It graphs each pair of variables as a point in a two dimensional space whose coordinates are the corresponding $x,y$ values.
+
+To create a scatter plot with the \texttt{graphics} package call \texttt{plot} with two dataframe columns.
+
+<<graphics61>>=
+plot(faithful$waiting, faithful$eruptions, xlab="waiting time (min)",ylab="eruption time (min)")
+@
+
+We conclude from the two clusters in the scatter plot above that there are two distinct cases: short eruptions and long eruptions. Furthermore, the waiting times for short eruptions are typically short, while the waiting times for the long eruptions are typically long. This is consistent with our intuition: it takes longer to build the pressure for a long eruption than it does for a short eruption.
+
+The points above are graphed using hollow circular markers. The arguments \texttt{pch}, \texttt{col}, \texttt{cex} modify the marker's shape, color, and size, respectively. Type \texttt{help(pch)} for more information on setting these values.
+
+<<graphics7>>=
+plot(faithful$waiting, faithful$eruptions, pch=17, col=2,cex=1.2, xlab="waiting times (min)", ylab="eruption time (min)")
+@
+
+In some cases we wish to plot a scatter plot of one dataframe column vs. another, but distinguish the points based on the value of another dataframe column, typically a factor variable (factors in R take values in an ordered or unordered finite set --- see previous chapter). Consider, for example, the plot below, which shows horsepower vs. mile per gallon of cars within the \texttt{mtcars} dataset, but distinguishes between automatic and manual transmission using different symbols. Transmission types are encoded through the \texttt{am} variable, which takes values 0 or 1 --- both legitimate values for the \texttt{pch} marker shape argument.
+
+<<graphics8>>=
+plot(mtcars$hp, mtcars$mpg, pch=mtcars$am, xlab="horsepower", cex=1.2,ylab="miles per gallon", main="mpg vs. hp by transmission")
+# add a legend connecting marker shape to corresponding variable values
+legend("topright",c("automatic","manual"),pch=c(0,1))
+@
+
+We draw several conclusions from this graph. First, there is an inverse relationship between horsepower and mpg. Second, for a given horsepower amount, manual transmission cars are generally more fuel efficient. Third, cars with the highest horsepower tend to be manual. Indeed, the two highest horsepower cars in the dataset are Maserati Bora and Ford Pantera, both sports cars with manual transmissions.
+
+To graph a scatter plot with \texttt{qplot} call it with two dataframe column parameters assigned to the \texttt{x} and \texttt{y} arguments.
+
+<<graphics9>>=
+print(qplot(x=waiting, y=eruptions, data=faithful,main="Waiting times (sec) vs. eruptions (min)"))
+@
+
+The graph below shows a scatter plot of car weights vs mpg. The first line below adds another dataframe column with a more appropriate name (\texttt{weight} as opposed to \texttt{wt}) for clear labeling of the axes. Changing the name of the existing column using the function \texttt{names} is another option.
+
+<<graphics10>>=
+# for enhanced readability
+mtcars$weight=mtcars$wt
+print(qplot(x=weight,y=mpg,data=mtcars,main="MPG vs. weight (x1000 lbs)"))
+@
+
+We conclude from the figure above that there exists a somewhat linear trend with negative slope between mpg and weight. Denoting the number of cylinders by size using the \texttt{size} argument allows us to investigate the relationship between the three quantities.
+
+<<graphics11>>=
+print(qplot(x=weight, y=mpg, data=mtcars, size=cyl, main="MPG vs. weight (x1000 lbs) by cylinder"))
+@
+
+We conclude from the figure that cars with more cylinders tend to have higher weight and lower fuel efficiency. Alternatively, color can be used to encode the number of cylinders using the argument \texttt{color}.
+
+<<eval=F>>=
+print(qplot(x=weight, y=mpg, data=mtcars, color=cyl,main="MPG vs. weight (x1000 lbs) by cylinder"))
+@
+
+In many cases the data contains a large amount of noise, and graphing it may focus the viewer's attention on the noise while hiding important general trends. One technique to address this issue is to add a smoothed line curve $y_S$, which is a weighted average of the original data $(y^{(i)},x^{(i)})$ $i=1,\ldots,n$:
+\[y_S(x)=\sum_{i=1}^n \frac{K_h(x,x^{(i)})}{\sum_{i=1}^n K_h(x,x^{(i)})} y^{(i)}.\]
+In other words, $y_S(x)$ is an average the $y^{(i)}$ values, weighted in a way that emphasizes $y^{(i)}$ values whose corresponding $x^{(i)}$ values are close to $x$ (see the discussion earlier in this chapter on weighted histogram for a description of the kernel function $K_h$). The denominator in the definition of $y_S$ ensures that the weights defining the weighted average sum to 1.
+
+We demonstrate the smoothed scatter plot with several graphs below. The first two graphs explore different values of $h$, the parameter that influences the spread of the $g_i(x)=K_h(x,x^{(i)})$ functions. To adjust $h$, we modify the \texttt{span} argument that has a similar role to the \texttt{adjust} parameter in the discussion of the smoothed histogram above.
+
+<<graphicsSmoothLine1,fig.height=2.5>>=
+print(qplot(disp,mpg,data=mtcars,main="MPG vs Eng. Displacement")+stat_smooth(method="loess",degree=0,span=0.2,se=FALSE))
+@
+
+Increasing the value of the \texttt{span} parameter increases $h$, resulting in wider $g_i$ functions and a less wiggly curve.
+
+<<graphicsSmoothLine2,fig.height=2.5>>=
+print(qplot(disp,mpg,data=mtcars,main="MPG vs Eng. Displacement")+stat_smooth(method="loess",degree=0,span=1,se=FALSE))
+@
+
+Selecting an even larger $h$ results in a nearly constant line.
+
+<<graphicsSmoothLine3,fig.height=2.5>>=
+print(qplot(disp,mpg,data=mtcars,main="MPG vs Eng. Displacement")+stat_smooth(method="loess",degree=0,span=10,se=FALSE))
+@
+
+Omitting this parameter reverts to an automatically chosen value.
+
+<<graphicsSmoothLine4,fig.height=2.5>>=
+print(qplot(disp,mpg,data=mtcars,main="MPG vs Eng. Displacement")+stat_smooth(method="loess",degree=0,se=FALSE))
+@
+
+We can conclude from the graph above that mpg decreases as engine displacement volume increases. The trend is nonlinear with a slope that changes as follows: first small slope, then large slope, and then small slope again (in absolute value). This information is readily available from the smoothed $y_S$ but is not easy to discern from the original scatter plot data.
+
+In some cases we want to examine multiple plots with the same $x$ or $y$ axes in different side-by-side panels. The function \texttt{qplot} enables this using the \texttt{facets} argument which takes a formula of the form $a\sim b$ and creates multiple rows and columns of panels ($a$ determines the row variable and $b$ the column variable).
+
+In the first example below we graph two scatter plots side-by-side: mpg vs. weight for automatic transmission cars and manual transmission cars. Note that the two panels are side-by-side since the \texttt{facet} argument is $.\sim$\texttt{amf}. The two panels share the same axes' scales, thus facilitating easy comparison. As before, we create new dataframe columns with more appropriate names for in order to create more informative axes labeling. Changing the names of existing columns using the function \texttt{names} is another option.
+
+<<graphics13,fig.height=2.5>>=
+# add new dataframe columns with more appropriate names for
+# better axes labeling in future graphs
+mtcars$amf[mtcars$am==0]='automatic'
+mtcars$amf[mtcars$am==1]='manual'
+mtcars$vsf[mtcars$vs==0]='flat'
+mtcars$vsf[mtcars$vs==1]='V-shape'
+print(qplot(x=weight, y=mpg, facets=.~amf, data=mtcars,main="MPG vs. weight by transmission"))
+@
+
+We conclude from the graph above that manual transmission cars tend to have lower weights and be more fuel efficient. The graph below plots mpg vs. weight for two panels - one above the other indicating whether or not the engine is a V shape engine.
+
+<<graphics14>>=
+print(qplot(x=weight, y=mpg, facets=vsf~., data=mtcars,main="MPG vs. weight by engine") + stat_smooth(se=FALSE))
+@
+
+We conclude from the graph above that cars with V shape engines tend to weigh less and be more fuel efficient. The graph below shows a multi-row and multi-column array of panels. It shows that manual transmission and V engine cars tend to be the lighter and more fuel efficient. Automatic transmission and non-V engine are heavier and less fuel efficient.
+
+<<graphics15>>=
+print(qplot(x=weight, y=mpg, data=mtcars, facets=vsf~amf,main="MPG vs. weight by transmission and engine"))
+@
+
+The function \texttt{plot} can create a similar array of panels with synchronized axes scales when it receives an entire dataframe as an argument.  We demonstrate this below by exploring all-pairs relationships between city mpg, highway mpg, and engine displacement volume.
+
+<<graphics16,fig.height=6>>=
+# create a new dataframe with three columns: cty, hwy, and disp
+DF=mpg[,c("cty","hwy","displ")]
+plot(DF,main="City MPG vs. Highway MPG vs. Engine Volume")
+@
+
+The corresponding \texttt{ggplot2} package alternative is \texttt{plotmatrix}. It also displays smoothed histograms of all variables in the diagonal panels.
+
+<<graphics17,fig.height=6>>=
+print(plotmatrix(DF))
+@
+\label{fig:graphics:plotMatrix}
+
+We can conclude from the plot above that while highway mpg and city mpg tend to increase together linearly, they are in inverse (non-linear) relationship to the engine displacement volume.
+
+%---------------------------------------------------------------------------------------
+\section{Line Plots}
+
+The \texttt{graphics} package features the function \texttt{curve} that displays mathematical functions. In the example below, the first line defines a new function called \texttt{sinc} while the second line plots it. Note the automatic labeling of the  axes.
+
+<<graphics18,fig.height=3>>=
+sinc=function(x) sin(pi*x)/(pi*x)
+curve(sinc,-7,+7)
+@
+
+Another option to display a line plot with the \texttt{graphics} package is to use \texttt{plot} but with a  \texttt{type="l"} parameter, as below. The variable \texttt{lty} allows us to display different line types (dashed, dotted, etc.). We demonstrate this below by plotting hwy mpg and city mpg as line plots, where the samples are sorted by city mpg.
+
+<<graphics19,fig.height=4.5>>=
+S=sort.int(mpg$cty,index.return=T)
+#  S$x holds the sorted values of city mpg
+#  S$ix holds the indices of the sorted values of city mpg
+#  First plot the sorted city mpg values with a line plot
+plot(S$x,type="l",lty=2,xlab="sample number (sorted by city mpg)",ylab="mpg")
+# add dashed line of hwy mpg
+lines(mpg$hwy[S$ix],lty=1)
+legend("topleft",c("highway mpg","city mpg"),lty=c(1,2))
+@
+
+We can conclude from the plot above that (i) highway mpg tends to be higher than city mpg, (ii) highway mpg tends to increase as city mpg increases, and (iii) the difference between the two quantities is less significant for less fuel efficient cars.
+
+The \texttt{qplot} function creates a line plot when passed a \texttt{geom=line} parameter.
+
+<<graphics20,fig.height=2>>=
+x=seq(-2,2,length.out=30); y=x^2
+print(qplot(x,y,geom="line"))
+@
+
+Below is a similar example where multiple geometries are present.
+
+<<graphics21,fig.height=2>>=
+print(qplot(x,y,geom=c("point","line")))
+@
+
+The function \texttt{ggplot} creates the same plot by adding a line geometry layer \texttt{geom\_line()}.
+
+<<eval=F>>=
+# new data frame with variables x,y=x^2
+D=data.frame(x=x,y=y)
+print(ggplot(D,aes(x=x,y=y))+geom_line()+geom_point())
+@
+
+%---------------------------------------------------------------------------------------
+\section{Contour Plots}
+
+The most convenient way to graph a two dimensional function $f(x,y)$ is by graphing its equal height contours
+\[ z_c = \{x\in\R,y\in\R: f(x,y)=c\}\]
+for different values of $c$. To graph such a function with the \texttt{ggplot2} package, create a dataframe with columns corresponding to the \texttt{x}, \texttt{y}, and \texttt{z} values. The \texttt{x} and \texttt{y} columns should feature all possible combinations of the two coordinates over a certain grid. Then call \texttt{ggplot} and add the \texttt{stat\_contour} layer.
+
+<<grpahics22a,cache=F,external=F>>=
+x=seq(-1,1,length.out=100); y=x
+# create a dataframe containing all possible combinations of x,y
+R=expand.grid(x,y)
+# number of rows is 100 x 100 - one for each combination
+dim(R)
+# modify column names for clear axes labeling
+names(R)=c('x','y')
+R$z=R$x^2+R$y^2
+head(R)
+@
+
+<<graphics22,fig.height=3.5,width=3.5>>=
+print(ggplot(R,aes(x=x,y=y,z=z))+stat_contour())
+@
+
+%---------------------------------------------------------------------------------------
+\section{Quantiles and Box Plots} \label{sec:graphics:quantiles}
+
+Histograms are very useful for summarizing numeric data in that they show the rough distribution of values. An alternative that is often used in conjunction with the histogram is the box plot. We start with describing the notion of percentiles that plays a central role in our discussion.
+
+The $r$-percentile of a numeric dataset is the point at which approximately $r$ percent of the data lie underneath, and approximately $100-r$ percent lie above\footnote{There are several different formal definitions for percentiles. Type \texttt{help(quantile)} for several competing definitions that R implements.}. Another name for the $r$ percentile is the $0.r$ quantile.
+
+<<graphics2301,cache=F,external=F>>=
+# display 0 through 100 percentiles at 0.1 increments
+# for the dataset containing 1,2,3,4.
+quantile(c(1,2,3,4),seq(0,1,length.out=11))
+@
+
+The median or 50-percentile is the point at which half of the data lies underneath and half above. The 25-percentile and 75 percentile are the points at which 25\% and 75\% of the data lie above, respectively. These points are also called the first and third quartiles (the second quartile is the median). The interval between the first and third quartiles is called the inter-quartile range (IQR). It is the region covering the central 50\% of the data.
+
+The box plot is composed of a box, an inner line bisecting the box, whiskers that extend to either side of the box, and outliers. The box denotes the IQR, with the inner bisecting line denoting the median. The median may or may not be in the geometric center of the box, depending on whether the distribution of values is skewed or symmetric. The whiskers extend to the most extreme point no further than 1.5 times the length of the IQR away from the edges of the box. Data points outside the box and whiskers' range are called outliers and are graphed as separate points. Separating the outliers from the box and whiskers is useful for avoiding a distorted viewpoint where there are a few extreme non-representative values.
+
+The following code graphs a box plot in R using the \texttt{ggplot2} package. The \texttt{+} operator below adds the box plot geometry, flips the x,y coordinates, and removes the  $y$-axis label.
+
+<<graphics23,fig.height=2>>=
+print(ggplot(mpg, aes(factor(""),hwy)) + geom_boxplot() + coord_flip() + scale_x_discrete(""))
+@
+
+We conclude from this graph that the median highway mpg is around 24, with the central 50\% of the data falling within the box, which spans the range from 18 to 27. There are two high outliers over 40, but otherwise the remaining data lie within the whiskers between 12 and 37. The fact that the inner line is right of the middle of the box hints that the distribution is skewed to the right.
+
+Contrast the box plot above with the smoothed histogram in Page~\pageref{fig:graphics:plotMatrix} (center panel). The box plot does not convey the multimodal nature of the distribution that the histogram shows. On the other hand, it is easier to read the median and the IQR, which shows the center and central 50\% range from the box plot.
+
+It is convenient to plot several box plots side by side in order to compare data corresponding to a separate factor variable. We demonstrate this by graphing below box plots of highway mpg for different classes of vehicles. We flip the box plots horizontally (using \texttt{coord\_flip()}) since the text labels display better in this case and we re-order the factors of the \texttt{class} variable in order to sort the box plots in order of increasing highway mpg medians. This makes it easier to compare the different populations.
+
+<<graphics24>>=
+print(ggplot(mpg, aes(reorder(class, -hwy, median), hwy))+geom_boxplot() + coord_flip() + scale_x_discrete("class"))
+@
+
+The graph suggests the following fuel efficiency order among vehicle classes: pickups, SUV, minivans, 2-seaters, sub-compacts, midsizes, and compacts. The compact and midsize categories have almost identical box and whiskers but the compact category has a few high outliers. The spread of subcompact cars is substantially higher than the spread in all other categories. We also note that SUVs and two-seaters have almost disjoint values (the box and whisker ranges are completely disjoint) leading to the observation that almost all 2-seater cars in the survey have a higher highway mpg than SUVs.
+
+%---------------------------------------------------------------------------------------
+\section{qq-Plots} \label{sec:graphics:qqplots}
+
+Quantile-quantile plots or qq-plots are useful for comparing two datasets, one of which may be sampled from a certain distribution. They are essentially scatter plots of the quantiles of one dataset vs the quantiles of another dataset. The shape of the scatter plot implies the following conclusions. We avoid proofs at this point as they require knowledge of probability and statistics, which we will starting from Chapter~\ref{chap:prob}.
+
+\begin{itemize}
+\item  A straight line with slope 1 that intersects the origin implies that the two datasets have identical quantiles, and therefore that they are sampled from identical distributions.
+\item  A straight line with slope 1 that does not pass through the origin implies that the two datasets have distributions of similar shape and spread, but that one is shifted with respect to the other.
+\item A straight line with slope different from 1 that does not pass through the origin implies that the two datasets have distributions possessing similar shapes but that one is translated and scaled with respect to the other.
+\item A non-linear S shape implies that the dataset corresponding to the $x$-axis is sampled from a distribution with heavier tails than does the other dataset.
+\item A non-linear reflected S shape implies that the dataset whose quantiles correspond to the $y$-axis is drawn from a distribution having heavier tails than does the other dataset.
+\end{itemize}
+
+To compare a single dataset to a distribution we sample values from the distribution, and then display the qq-plots of the two datasets. The quantiles of the sample drawn from the distribution are sometimes called theoretical quantiles.
+
+For example, consider the three datasets sampled from three bell-shaped distributions: $N(0,1)$, $N(0,1)$, and $N(0,2)$ (a precise definition of these important distributions will appear in Chapter~\ref{chap:RVexamp}). The corresponding histograms appear below.
+
+<<graphics25,fig.height=4>>=
+D=data.frame(samples=c(rnorm(200,1,1),rnorm(200,0,1),rnorm(200,0,2)));
+D$parameter[1:200]='N(1,1)';
+D$parameter[201:400]='N(0,1)';
+D$parameter[401:600]='N(0,2)';
+print(qplot(samples,facets=parameter~.,geom='histogram',data=D))
+@
+
+We compute below the qq-plots of these three datasets ($y$ axis) vs a sample drawn from the $N(0,1)$ distribution ($x$ axis).
+
+<<graphics26,fig.height=2.5>>=
+print(ggplot(D,aes(sample=samples))+stat_qq()+facet_grid(.~parameter));
+@
+
+Note how all three plots are linear, implying that the three datasets have distributions similar in shape to the $N(0,1)$ distribution up to translation and scaling. In the left panel we get a linear shape with slope 1 which passes through the origin, since the two datasets were sampled from the same $N(0,1)$ distribution. In the middle panel we get a line passing through the origin but with a steeper slope, since the data was more wide-spread than the $N(0,1)$ distribution. In the right panel we get a slope 1 line that does not pass through the origin since the two distributions have identical spread but are translated with respect to each other.
+
+As a final example we show the qq-plot of a sample from a $N(0,1)$ distribution with a sample from a $t$-distribution whose tails decrease polynomially rather than exponentially. As a result the two distributions have fundamentally different shapes and their quantiles are non-linearly related. A formal definition of the $t$-distribution appears in Chapter~\ref{chap:RVexamp}.
+
+\label{page:graphics:tnqqplot}
+
+<<graphics27,fig.height=2.5>>=
+x=seq(-6,6,length.out=200)
+R=data.frame(density=dnorm(x,0,1))
+R$tdensity=dt(x,1.5); R$x=x
+print(ggplot(R,aes(x=x,y=density))+geom_area(fill=I('grey'))+geom_line(aes(x=x,y=tdensity))+ opts(title="Gaussian (shaded) and t-distribution (dof=1.5)"))
+@
+
+<<graphics28,fig.height=2.5>>=
+R$samples=rnorm(200,0,1); pm=list(df=1.5)
+print(ggplot(R,aes(sample=samples))+stat_qq(distribution=qt,dparams=pm));
+@
+
+%---------------------------------------------------------------------------------------
+\section{Devices }
+
+By default, R overwrites the current figure with new plots. To maintain multiple graphic windows at the same time, open additional graphics windows using the function \texttt{dev.new()}. The \texttt{ggsave} function within the \texttt{ggplot2} package saves the active graphics window to a file with the file type (pdf, postscript, jpeg) corresponding to the file name extension.
+
+<<graphics29,eval=F>>=
+# detects file-type from file extension
+ggsave(file="myPlot.pdf")
+@
+
+To send all future graphics to a single file use one of the following functions: \texttt{postscript}, \texttt{pdf}, \texttt{xfig}, \texttt{bmp}, \texttt{png}, \texttt{jpeg}, \texttt{tiff}. It is essential to call the function \texttt{dev.off()} at the end of the graphics session in order to ensure that the graphics file is closed properly. To see a precise list of optional parameters such as font size and compression rate refer to\texttt{help(X)} where \texttt{X} is one of the device drivers.
+
+The first three drivers (\texttt{postscript}, \texttt{pdf}, \texttt{xfig}) maintain high-resolution graphics using vector graphics. The resulting graphics can be zoomed in to arbitrary precision. Among these formats, pdf is usually preferred, since it is often smaller in file size and may be accessed by a wide variety of programs.
+
+The latter four drivers (\texttt{bmp}, \texttt{png}, \texttt{jpeg}, \texttt{tiff}) produce raster graphics which correspond to pixelized images with fixed resolutions. While vector graphics is generally preferable to raster graphics due to its superior resolution, vector graphics may produce very large files when the graphics contain many objects. In that case a raster graphics file may be preferable due to its smaller file size.
+
+<<eval=F>>=
+# save all future graphics to file myplots.pdf
+pdf('myplots',height=5,width=5,pointsize=11);
+#  graphics plotting
+qplot(...)
+qplot(...)
+#  close graphics file and return to display driver
+dev.off()
+@
+
+%---------------------------------------------------------------------------------------
+\section{Data Preparation} \label{sec:dataPrep}
+
+We emphasize in this book graphing data by first creating a dataframe with the appropriate data and informative column names, and then calling \texttt{plot}, \texttt{qplot}, or \texttt{ggplot}. This approach is better than keeping the data in an unannotated array, graphing the values, and then labeling the axes, legends, and facets appropriately. In the examples above we usually started with a ready-made dataframe, but in most data analysis cases the dataframe has to be prepared by the data analyst.
+
+To create a dataframe use the  \texttt{data.frame} function.
+
+<<eval=F>>=
+R=data.frame(name=vec1, ages=vec2, salary=vec3)
+@
+
+If a dataframe already exists, but the variable names are not coherent, change the names using the \texttt{names} function.
+
+<<eval=F>>=
+names(R)=c("last.name","ages","annual.income")
+@
+
+The functions \texttt{rbind} and \texttt{cbind} add additional rows or columns to an existing dataframe.
+
+Consider the following example of graphing the line plots of to the normal density function (see Chapter~\ref{chap:RVexamp})
+\[f(x)=N(x\,;0,\sigma)=\exp(-x^2/(2\sigma^2))/(\sqrt{2\pi\sigma^2})\]
+with the color and line type corresponding to the value of $\sigma$ among four different values: 1, 2, 3, and 4. Note that this function is also $g_0(x)=K_h(x,0)$ for the kernel given in \eqref{eq:graphics:kernelGaussian}.
+
+Our strategy is to first compute a list of four vectors containing $y$ values --- one vector for each value of $\sigma$.  The names of the four list elements identify the $\sigma$ corresponding to that element. We then use the \texttt{stack} function to create the dataframe.
+
+The following code helps illustrate the more complete example below.
+
+<<graphics291,cache=F,external=F>>=
+A=list(a=c(1,2),b=c(3,4),c=c(5,6))
+A
+stack(A)
+@
+
+<<graphics30>>=
+x=seq(-8,8,length.out=100)
+gf=function(x,s) exp(-x^2/(2*s^2))/(sqrt(2*pi)*s)
+R=stack(list('sigma=1'=gf(x,1),'sigma=2'=gf(x,2),'sigma=3'=gf(x,3),'sigma=4'=gf(x,4)))
+# below, x is recycled four times
+names(R)=c("y","sigma"); R$x=x
+print(qplot(x, y, color=sigma, lty=sigma, geom="line", data=R,main="Normal density for different sigma values"))
+@
+\label{fig:graphics:Gaussians}
+
+%---------------------------------------------------------------------------------------
+\section{Notes}
+
+Refer to the  official R manual at \href{http://cran.r-project.org/doc/manuals/R-intro.html}{http://cran.r-project.org/doc/manuals/R-intro.html} (replace html with pdf for pdf version) and the language reference at \\ \href{http://cran.r-project.org/doc/manuals/R-lang.html}{http://cran.r-project.org/doc/manuals/R-lang.html} (replace html with pdf for pdf version)  for more information on R graphics. Detailed information on the \texttt{ggplot2} package appears in \cite{Wickham2009} or on the website \href{http://had.co.nz/ggplot2/}{http://had.co.nz/ggplot2/}. A comprehensive description of the grammar of graphics which is the basis of the \texttt{ggplot2} package is available in \cite{Wilkinson2005}. Two useful books on how to construct useful graphs are \cite{Cleveland1985,Cleveland1993}. Tuckey's classic book on exploratory data analysis is another useful resource \cite{Tuckey1977}.
+
+The package \texttt{lattice} \cite{Sarkar2008} is an popular alternative to \texttt{graphics} and \texttt{ggplot2}. It often creates graphs faster than \texttt{ggplot2}, but its syntax is less intuitive.  Many other R packages contain graphics functions for specialized data such as time series, financial data, or geographic maps. A useful resource for exploring such packages is the Task Views \\ \href{http://cran.r-project.org/web/views/}{http://cran.r-project.org/web/views/}.
+
+%---------------------------------------------------------------------------------------
+\section{Exercises}
+
+\begin{enumerate}
+\item Using the \texttt{mpg} data, describe the relationship between highway mpg and car manufacturer. Describe which companies produce the most and least fuel efficient cars, and display a graph supporting your conclusion.
+\item Using the \texttt{mpg} data, explore the three-way relationship between highway mpg, city mpg, and model class. What are your observations? Display a graph supporting these observations.
+\item What are the pros and cons of using a histogram vs a box plot? Which one will you prefer for what purpose?
+\item Generate two sets of $N$ random points using the function \texttt{runif} and display a corresponding scatter plot. If you save the file to disk, what is the resulting file size for the following file formats: ps, pdf, jpeg, png? How do these values scale with increasing $N$?
+\item The \texttt{diamond} dataset within \texttt{ggplot2} contains 10 columns (price, carat, cut, color, etc.) for 53940 different diamonds. Type \texttt{help(diamonds)} for more information. Plot histograms for color, carat, and price, and comment on their shapes. Investigate the three-way relationship between price, carat, and cut. What are your conclusions? Provide graphs that support your conclusions. If you encounter computational difficulties, consider using a smaller dataframe whose rows are sampled from the original \texttt{diamonds} dataframe. Use the function \texttt{sample} to create a subset of indices that may be used to create the smaller dataframe (see Section~\ref{sec:preprocessing}).
+\end{enumerate}
+
+
+
