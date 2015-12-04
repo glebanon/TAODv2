@@ -134,27 +134,27 @@ To Anat Lebanon
 \tableofcontents
 
 \chapter{Hardware}
-<<hardware,child='hardware.Rnw',eval=TRUE>>=
+<<hardware,child='hardware.Rnw',eval=FALSE>>=
 @
 
 \chapter{The Operating System}
-<<os,child='os.Rnw',eval=TRUE>>=
+<<os,child='os.Rnw',eval=FALSE>>=
 @
 
 \chapter{C++ Programming}
-<<cpp, child='c.Rnw',eval=TRUE>>=
+<<cpp, child='c.Rnw',eval=FALSE>>=
 @
 
 \chapter{Java Programming}
-<<java, child='java.Rnw',eval=TRUE>>=
+<<java, child='java.Rnw',eval=FALSE>>=
 @
 
 \chapter{Python Programming}
-<<python, child='python.Rnw',eval=TRUE>>=
+<<python, child='python.Rnw',eval=FALSE>>=
 @
 
 \chapter{R Programming}
-<<child='Rprog.Rnw',eval=TRUE>>=
+<<child='Rprog.Rnw',eval=FALSE>>=
 @
 
 % Sep-Oct
@@ -163,11 +163,11 @@ To Anat Lebanon
 @
 
 \chapter{Data Visualization}
-<<child='graphics.Rnw',eval=TRUE>>=
+<<child='graphics.Rnw',eval=FALSE>>=
 @
 
 \chapter{Data Processing}
-<<child='preprocessing.Rnw',eval=TRUE>>=
+<<child='preprocessing.Rnw',eval=FALSE>>=
 @
 
 % Aug
@@ -179,8 +179,9 @@ To Anat Lebanon
 \chapter{Cloud Computing}  
 
 \cleardoublepage
-\bibliographystyle{plain}
-\bibliography{references}
+
+%\bibliographystyle{plain}
+%\bibliography{references}
 
 \cleardoublepage
 % \addcontentsline{toc}{chapter}{Index}

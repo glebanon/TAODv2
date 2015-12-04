@@ -1,4 +1,5 @@
 Rnw/*.aux
+Rnw/*.tex
 Rnw/*.db
 Rnw/*.npz
 Rnw/*.npy
@@ -6,6 +7,6 @@ Rnw/computing-tikzDictionary
 Rnw/array2.txt
 Rnw/df1.txt
 Rnw/patients.txt
-Rnw/computing.pdf
+Rnw/computing*.pdf
 computing.tex
 Rnw/cache/*

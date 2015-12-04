@@ -287,21 +287,21 @@ print(arr)
 %---------------------------------------------
 \section{The Relational Database Model}
 
-Relational database management systems (RDBMS) complex computer programs that simplify the process of storing and retrieving data, in particular when the data is large and there are several users storing and retrieving data from the same database. Relational databases typically provide the following capabilities.
+A relational database management system (RDBMS) is a computer program that simplify the process of storing and retrieving data, in particular when the data is large and there are several users storing and retrieving data. Relational databases typically provide the following capabilities.
 \begin{enumerate}
-\item Relational databases allow users to create a new database and specify its schema, which is a specification of the type of data that is normally allowed to reside in the database.	
-\item Relational databases let users query the database using a specific query language, called structured query language (SQL). The RDBMS process the query and returns to the user the corresponding portion of the data (or sometimes a computation based on the data).
+\item Relational databases allow users to create a new database and define its schema, which is a specification of the type of data that can reside in the database.	
+\item Relational databases let users query the database using a query language called structured query language (SQL). The RDBMS process the query and returns to the user the corresponding portion of the data (or sometimes a computation based on the data).
 \item Relational databases are good at storing large amounts of data (typically on the hard disk) and are relatively efficient in executing queries over large datasets.
 \item Relational databases enable multiple users to store and access the data, ensuring that the results of the operations are identical to a corresponding sequence of requests that are performed independently.
 \end{enumerate}
 
-The last property above refers is sometime referred to as atomicity. Each individual request (deletion, addition, modification, or querying) is executed in its entirety before other requests are processed\footnote{Two or more requests are sometimes executed in parallel if it is guaranteed that the end results remain the same.}. The scheduler manages such concurrent requests, and places locks that prevent additional requests from being processed until the previous requests are completed.
+The last property above is sometime referred to as atomicity. Each individual request (deletion, addition, modification, or querying) is executed in its entirety before other requests are processed. The scheduler manages such concurrent requests, and places locks that prevent additional requests from being processed until the previous requests are completed. Exceptions may be made where requests are performed in parallel if it is guaranteed that the end result remains the same.
 
-We describe below the relational model that is used in RDBMS, and then describe the SQL query language. We conclude this section with a description of how different programs can interact with databases. 
+We describe below the relational model that is used in RDBMS, and then describe the SQL query language. We conclude this section with a description of how  programs can interact with relational databases. 
 
 \subsection{The Relational Model}
 
-The relational model is based on two dimensional tables, called relations. Each relation has rows, which are called tuples or records, and columns, which describe properties of tuples. The columns are usually annotated by descriptive names known as attributes. The values in specific row-column combinations are known as fields. The values in the different columns are constrained to be within a certain domain (for example, string, integer, or floating point). The name of the relation, the attributes, and the column domain constraints form the relation schema. 
+The relational model that is used in RDBMS is based on two dimensional tables, called relations. Each relation has rows, which are called tuples or records, and columns, which describe properties of tuples. The columns are usually annotated by descriptive names known as attributes. The values in specific row-column combinations are known as fields. The values in the different columns are constrained to be within a certain domain (for example, string, integer, or floating point). The name of the relation, the attributes, and the column domain constraints form the schema of the relation.
 
 For example, consider the \texttt{retail-1} relation in Figure~\ref{fig:data:retail1} that contains a list of items described by their name, ID, and retail price. The columns in this case may be constrained to lie in the string, integer, and floating point domains, respectively. 
 

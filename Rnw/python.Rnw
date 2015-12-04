@@ -1,4 +1,5 @@
-\section{Overview}
+ \label{chap:Python}
+ \section{Overview}
 
 Python is a general purpose programming language that emphasizes object-oriented programming, extensibility, and code readability. Like R, Python's syntax makes it possible to express complicated programs in fewer lines of codes than C++ or Java. 
 
@@ -55,7 +56,7 @@ t = s.upper()
 print(t)
 @
 
-A Python module is a .py file containing variable definitions and function definitions. The command \texttt{import} followed by the module file name (without the .py suffix) makes the definitions in the module accessible as long as the definitions are prefixed by the module name followed by a period.  
+A Python module is a .py source code that is executed when we call \texttt{import} followed by the module file name (without the .py suffix). In many cases, modules consist of definitions of variables, functions, and classes, rather than code outside of such enviornments. When importing such modules, the definitions in the module become available for usage, but no additional side effect is executed during the \texttt{import} command.
 
 For example, suppose we have a module file \texttt{my\_vars.py} containing the following code.
 
@@ -200,6 +201,44 @@ print("%d is the integer representation of %f" % (t, w))
 @
 
 \end{itemize}
+
+\subsection{Duck Typing} \label{sec:python:duck}
+
+In Java and C++ the suitability of an operation for an object is determined by the object type. For example, a function \texttt{foo(x)} will be able to operate on its argument based on whether \texttt{x} is of a suitable type specified in the function definition. A C++ function \texttt{int foo(float x)} will only work on a \texttt{float} argument.
+
+In duck typing, the constraints are not specified in the code in the same sense. Rather, the interpreter tries to execute the code and if it cannot, a run-time crash will occur. For example, a function will take an argument of any type and tries to execute the code. Duck typing is called duck typing after the phrase ``if it walks like a duck and quacks like a duck, it is a duck''.
+
+Below is an example where the function \texttt{foo} accepts any objects that can execute the two functions \texttt{quack} and \texttt{walk} (rather than be constrained to a specific class). As a result, we can call it with both a \texttt{Duck} object and a \texttt{Fox} object that imitates a \texttt{Duck} in that it can execute the functions \texttt{quack} and \texttt{walk}.
+
+<<engine="python">>=
+class Duck:
+  def quack(self):
+    print("Quack")
+  def walk(self):
+    print("Shuffle")
+
+class Fox:
+  def quack(self):
+    print("Quackkkkk")
+  def walk(self):
+    print("Shuffffle")
+  def kill(self):
+    print("Yum!")
+
+def foo(x):
+  x.quack()
+  x.walk()
+
+donald = Duck()
+swiper = Fox()
+foo(donald)
+foo(swiper)
+@
+
+There is some similarity between duck typing and interfaces in Java. Duck typing is less constrained since it is not required to specify that a particular interface is being implemented. In addition duck typing can implement only a part of an interface, and if only that part is called then the program will proceed to exectution.
+
+One disadvantage of duck typing is that it leads to less compile time errors and more run-time errors. Run time errors are generally considered undesirable as they are hard to prevent and debug. 
+
 
 %-------------------------------------------------------
 \section{Compound Data Types}
@@ -520,11 +559,11 @@ As in Java and C++, Python classes contain fields (variables) and methods (funct
 
 <<engine="python">>=
 class Point(object):
-  def __init__(self, x, y):
+  def __init__(self, x=0, y=0):
     self.x = x
     self.y = y
   def __del__(self):
-    print "destructing a point object"
+    print ("destructing a point object")
   def displayPoint(self):
     print "x: %f, y: %f" % (self.x, self.y)
 
@@ -534,45 +573,18 @@ p1.displayPoint()
 p2.displayPoint()
 @
 
-The methods \texttt{\_\_init\_\_} and \texttt{\_\_del\_\_} are the constructor and destructor methods that are called when an object is instantiated or destroyed by the garbage collection mehcanism. 
+The second print statement above uses a synax similar to the \texttt{printf} syntax in C and C++. In Python 3.X this syntax does not work and \texttt{print} is forced to use the function specific format using parenthesis, for example \texttt{print(\"x: \", self.x)}.
 
-The class methods definitions include a list of function arguments, the first of which is \texttt{self}, that does not  need to be passed when the method is called. For example, the constructor above has three arguments \texttt{self, x, y}, but when a new object is instantiated only two arguments are used. Inside a class method definition we can refer to a field of the current object using \texttt{self.var\_name}. Outside of the method definition, fields and methods are called by prefxing the field or method name by the variable name followed by a period. 
 
-Fields whose names are prefixed by a double underscore are generally hidden\footnote{Fields prefixed by double underscore are not equivalent to private access fields in C++ or Java since they are not impossible to access from outside the class, rather it is more difficult.} from code outside of the class definition.  Referring to fields can be done via getter and setter functions instead or directly accessing the variables. This can be done using the functions \texttt{getattr(object, field)} and \texttt{setattr(object, field, value)}. 
+The class methods definitions include a list of function arguments, the first of which is \texttt{self}, that does not need to be passed when the method is called. For example, the initialization method above has three arguments \texttt{self, x, y}, but when a new object is instantiated only two arguments are used. Inside a class method definition we can refer to a field of the current object using \texttt{self.var\_name}. Outside of the method definition, fields and methods are called by prefxing the field or method name by the variable name followed by a period. 
 
-\subsection{Inheritance}
+The methods \texttt{\_\_init\_\_} and \texttt{\_\_del\_\_} are the initialization method and destructor method that are called when an object is instantiated or when an object is destroyed by the garbage collection mehcanism. Above, the initialization method is called with two arguments that are set by default to zero if an explicit value is not passed to the method.
 
-Class inheritance in Python is indicated by including the base class in parenthesis after the class name. We demonstrate this concept by defining \texttt{namedPoint}, a class derived from the above \texttt{Point} class. The class \texttt{Point} is derived from  the generic \texttt{object} class, indicated by the expression below \texttt{class Point(object)} in the class definition. Similarly, \texttt{NamedPoint} is derived from \texttt{Point}, indicated by the expression \texttt{class NamedPoint(Point)}. Note that the constructor of \texttt{NamedPoint} calls the base class constructor followed by setting the name filed.
-
-<<engine="python">>=
-class Point(object):
-  def __init__(self, x, y):
-    self.x = x
-    self.y = y
-  def __del__(self):
-    print "destructing a point object"
-  def displayPoint(self):
-    print "x: %f, y: %f" % (self.x, self.y)
-
-class NamedPoint(Point):
-  def __init__(self, x, y, name):
-    # call superclass constructor
-    super(NamedPoint, self).__init__(x, y)  
-    self.name = name
-  def display_point(self):
-    print "x: %f, y: %f, name: %s" % (self.x, self.y, self.name)
-
-np = NamedPoint(3, 4, "lower point")
-np.display_point()
-@
-
-\subsection{Static Variables}
-
-As in C++ and Java, we can define static variables that belong to the class rather to specific instantiated objects. We define below a static variable \texttt{numPoints} that holds a value that is shared across all objects of the class. We can refer to static fields by prefixing it with the class name followed by a  period operator. Below, the definition of the class includes a string that describes the class (can be referrenced by the field name \texttt{Point.\_\_doc\_\_}). Another static variable is \texttt{Point.numPoints}, which keeps track of the number of instantiated objects. 
+The point class above has fields \texttt{x} and \texttt{y}, but they are not included in the class definition explicitly. In Python fields that are explicitly defined in the class definitions are class fields (similar to static fields). This means that all instantiated objects of the class share the same value. To refer to such class fields, prefix the field name with the class name followed by a period. The example below shows a class having fields \texttt{x} and \texttt{y} and a class field \texttt{num\_points} tracking the number of existing objects, and a \texttt{\_\_doc\_\_} class field holding the documentation string appearing after the class definition (see Section~\ref{sec:tools:docstrings} for more information on such documentation strings).
 
 <<engine="python">>=
 class Point(object):
-  'point in a two dimensional coordinate space'
+  "point in a two dimensional coordinate space"
   numPoints = 0
   def __init__(self, x, y):
     Point.numPoints += 1 
@@ -590,8 +602,44 @@ p1 = Point(3, 4)
 p2 = Point(1, 2)
 p1.displayPoint()
 p2.displayPoint()
+print "number of objects: %d" % Point.numPoints
 @
 
+Python does not enforce private access control as does Java or C++, but instead programmers can prefix fields and methods by a single underscore that by convention implies the field or method should not be accessed by external code. Prefixing a field or method by a double underscore is a similar solution to a single underscore but stronger as it executes name-mangling: accessing the field or method can only be done by prefixing the stated name with an underscore followed by the class name.
+
+Encapsulation as in C++ and Java can still be accomplilshed by referring to fields using getter and setter functions instead or directly accessing the variables. This can be done using the functions \texttt{getattr(object, field)} and \texttt{setattr(object, field, value)}. 
+
+\subsection{Inheritance}
+
+Class inheritance in Python is indicated by including the base class in parenthesis after the class name. Fields and methods belonging to the base class can still be referred to in the sub-class. Fields and methods that are added to the sub-class but do not exist in the base class represent additional functionality. A sub-class can also reimplement a method that is already defined in the base class. This allows the sub-class to override the base-class functionality with new functionality that is customized ot the sub-class. 
+
+We demonstrate this concept by defining \texttt{namedPoint}, a class derived from the above \texttt{Point} class. The class \texttt{Point} is derived from the generic \texttt{object} class, indicated by the expression below \texttt{class Point(object)} in the class definition. Similarly, \texttt{NamedPoint} is derived from \texttt{Point}, indicated by the expression \texttt{class NamedPoint(Point)}. Note that the constructor of \texttt{NamedPoint} calls the base class constructor followed by setting the name filed.
+
+<<engine="python">>=
+class Point(object):
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+  def displayPoint(self):
+    print "x: %f, y: %f" % (self.x, self.y)
+
+class NamedPoint(Point):
+  def __init__(self, x, y, name):
+    # call superclass constructor
+    super(NamedPoint, self).__init__(x, y)
+    self.name = name  
+  def display_point(self):
+    print "x: %f, y: %f, name: %s" % (self.x, self.y, self.name)
+
+np = NamedPoint(3, 4, "lower point")
+np.display_point()
+@
+
+Note that in the example above, the \texttt{\_\_init\_\_} superclass was overriden by a new definition of \texttt{\_\_init\_\_} in the sub-class. Such overriding can be done for other methods as well. The Python 2.7 syntax above \texttt{super(NamedPoint, self).\_\_init\_\_(x, y)} that refers to the super-class initializer (rather than the sub-class initializer) can be replaced in Python 3.X to the following simpler syntax: \texttt{super().\_\_init\_\_(x,y)}.
+
+Python also supports polymorphism in the sense that it performs dynamic time bindings. For example, if we call a method \texttt{foo} that is implemented differently by multiple subblasses, the interpreter will call the right method based on the specific subclass that the object is instantiating. 
+
+In fact, Python has a stronger form of polymorphism than Java or C++ due to its duck typing (see Section~\ref{sec:python:duck}). The correct method will be called regardless of the inheritance hierarchy (assuming the object provides the method). As a result polymorphism and inheritance become somewhat less important in Python than in C++ and Java.
 
 %-------------------------------------------------------
 \section{IPython}
@@ -639,6 +687,8 @@ IPython features additional profiling tools including a line profiler that shows
 
 %-------------------------------------------------------
 \section{Numpy, Scipy, and Pandas} \label{sec:python:numpy}
+
+Python has a large collection of modules that can be imported, some of which are part of the Python standard library and are installed by default. Third party modules in the Python Package Index (PyPI) can be installed using the \texttt{pip} command\footnote{To install the pip tool download it from the internet or type \texttt{sudo python -m ensurepip} in Python 3.4 or above.}. For example, to install a third party module \texttt{X} in PyPI call \texttt{pip install X}. In this section we cover three important modules for data analysis: numpy, scipy, and pandas. Chapter~\ref{chapter:graphics} describes another module, matplotlib, for generating graphs from data.
 
 Numpy is a Python package that provides (a) a data type \texttt{ndarray} for multidimensional arrays, (b) tools for vector, matrix, and array arithmetic operators over \texttt{ndarray} objects, (c) linear algebra and random number generation functionality, and (d) tools for reading from files and writing to files \texttt{ndarray} objects. 
 

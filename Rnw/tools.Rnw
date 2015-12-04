@@ -1,35 +1,121 @@
-% week 2 
 %-----------------------------------
 \section{Version Control}
-\subsection{Subversion} 
 \subsection{Git}
 \subsection{Github}
+\subsection{Subversion} 
 
-% week 3 
 %-----------------------------------
 \section{Build Tools}
 \subsection{Make}
 \subsection{Ant}
+\subsection{Gradle}
+
+
+%-----------------------------------
+\section{Exception Handling}
+
+Code can fail due to a variety of reasons. Examples include inadmissable input, incorrect logic, and undefined values such as division by zero. It is important to not let the code fail inappropriately and rather handle it in a carefully designed manner. 
+
+Traditionally, handling potential failures was done by checking input carefully before entering a function and making sure the output value is properly assigned. In the calling enviornment, the value returned from the function is checked again and handled appropriately if the returned value indicates a failure.
+
+Below is an example in C++ where a function attempts to insert an object into a list in a specific position. The code first check if the list is long enough and if not returns with a specific code (-1). Otherwise, the function calls \texttt{insert\_res} and returns the return value from that function.
+
+<<engine="python",eval=FALSE>>=
+int insertInPosition(List L, int pos, Object o) {
+  if (pos >= L.size()) 
+    return(-1);  // return -1 value for a fail
+  int insert_res = L.insert(pos, o);
+  return(insert_res);
+}
+@
+
+The process described above requires writing code that will both diagnose whether there is a problem and handle the problem at the entry of each function and at the calling enviornment after the return call. 
+
+Exception handling is a more effective way of handling code failures that at this point is supported in many major programming languages, including C++, Java, Python, and R. We describe below exception handling in Python. Exception handling in other languages is similar and once the concept is clear it is easy to learn how to use it in any of the languages above.
+
+\subsection{Exceptions in Python}
+
+
 
 %-----------------------------------
 \section{Documentation Tools}
-\subsection{Javadoc}
-\subsection{Doxygen}
+It is useful to write self-documenting code in the sense that the source code files contain significant documentation about the code implementation as well as how to use it. Many programming languages have a built-in documentation format that if the programmer adheres to can generate separate documentation files based on the in-code comments. Below we describe first Docstrings - a built-in documentation format used in Python, and later describe Javadoc - a similar format that is used in Java.
 
-% week 4 
+\subsection{Docstrings} \label{sec:tools:docstrings}
+
+Python docstrings appear as a string literal in the first statement following the definition of functions, methods, classes, and modules. Below is an example of a docstring documention of the Point class from Chapter~\ref{chap:Python}. 
+
+<<engine="python",eval=FALSE>>=
+class Point(object):
+  "A point in a two dimensional space"
+
+  def __init__(self, x=0, y=0):
+    """Initializes the point object to the origin by default, or otherwise 
+    the initializes to the passed x,y arguments."""
+    self.x = x
+    self.y = y
+  def __del__(self):
+    "Prints a message when an object is destroyed."
+    print "destructing a point object"
+  def displayPoint(self):
+    "Prints the object by displaying its x and y coordinates."
+    print "x: %f, y: %f" % (self.x, self.y)
+    
+help(Point)  # shows class doctring
+help(Point.displayPoint)  # shows method docstring
+@
+
+Docstrings can be accessed by the __doc__ attribute on objects inside the program or by typing \texttt{help(X)} in the Python prompt where \texttt{X} is the name of a class, method, function, or module.
+ 
+The docstring for a class should summarize its behavior and list the public methods. The docstring of a function or method should describe its effect, the arguments, the return values, and any restriction on its usage. The docstring for a module should list the classes and functions that are exported by the module with brief high-level descriptions.
+
+Another way to generate documentation from docstrings is using the pydoc program that can be called from the OS prompt as follows: \texttt{pydoc X} where is a built-in or programmer defined module, function, or class (in the latter case of built-in a path should be provided in \texttt{X} including a slash character).
+
+For example, typing at the OS prompt \texttt{pydoc ~/Point.py} produces the following documentation for the Point class above.
+
+\begin{verbatim}
+FILE
+    /Users/glevanon/tmp.py
+
+CLASSES
+    __builtin__.object
+        Point
+
+    class Point(__builtin__.object)
+     |  Represents a point in a two dimensional space
+     |
+     |  Methods defined here:
+     |
+     |  __del__(self)
+     |      Prints a message when an object is destroyed
+     |
+     |  __init__(self, x=0, y=0)
+     |      Initializes the point object to the origin by default, 
+     |      or otherwise the initializes to the passed x,y arguments
+     |
+     |  displayPoint(self)
+     |      Prints the object by displaying its x and y coordinates
+     |  
+     
+-- truncated --
+
+Adding to the pydoc command the \texttt{-w} flag outputs the generated documentation to a file in an HTML format.
+\end{verbatim}
+
+A more sophisticated and recent alternative to pydoc is the Sphinx program that can include math formulas, ipyhton interactive sessions, inheritance diagrams, and figures generated using matplotlib. Since it is considerably more complex than pydoc we do not discuss it in this book. More details about Sphinx are availble at \href{http://sphinx-doc.org}{http://sphinx-doc.org}.
+
+\subsection{Javadoc}
+
+
+
 %-----------------------------------
 \section{Unit Testing}
 \subsection{Unit Testing in Java with JUnit}
 \subsection{Unit Testing in Python with Nose}
 
-% week 1
-%-----------------------------------
 \section{Program Diagnostics}
 \subsection{Debugging}
 
-
-%---------------------------------------------------------------------------------------
-\section{Debugging and Profiling}
 
 Core R features some debugging and profiling functionality. Additional debugging and profiling functionality is available through third party packages, as described at the end of this section.
 
@@ -117,12 +203,7 @@ See \href{http://cran.r-project.org/doc/manuals/R-exts.pdf}{http://cran.r-projec
 
 \subsection{Speed Profiling}
 \subsection{Memory Profiling}
-\subsection{Coding Style}
 
-
-
-% week 2
-%-----------------------------------
 \section{Libraries}
 \subsection{BLAS, LINPACK, and LAPACK}
 \subsection{Eigen and Armadillo}
