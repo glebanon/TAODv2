@@ -12,7 +12,7 @@
 
 
 %-----------------------------------
-\section{Exception Handling}
+\section{Exceptions}
 
 Code can fail due to a variety of reasons. Examples include inadmissable input, incorrect logic, and undefined values such as division by zero. It is important to not let the code fail inappropriately and rather handle it in a carefully designed manner. 
 
@@ -29,16 +29,176 @@ int insertInPosition(List L, int pos, Object o) {
 }
 @
 
-The process described above requires writing code that will both diagnose whether there is a problem and handle the problem at the entry of each function and at the calling enviornment after the return call. 
+The process described above requires (a) writing code that will diagnose whether there is a problem and (b) handle the problem, and so at multiple key places such as function entry points and function return. Doing so eventually leads to writing duplicated code that is hard to maintain. 
 
 Exception handling is a more effective way of handling code failures that at this point is supported in many major programming languages, including C++, Java, Python, and R. We describe below exception handling in Python. Exception handling in other languages is similar and once the concept is clear it is easy to learn how to use it in any of the languages above.
 
-\subsection{Exceptions in Python}
+Exceptions are objects that represent an problematic situation that needs to be logged or handled. Usually, exception classes may be implemented in the language definition or standard library, or may be defined and implemented by the programmer. In either case, exception classes inherit from the base exception class (for example, in Python it is \texttt{BaseException}) or one of its descendents. 
+
+When the appropriate situation is discovered, the exception is activated. This is called throwing an exception. At that point program execution is suspended and is transferred to the try block containing the code that lead to the thrown exception. 
+
+We describe the process below in the case of the Python programming languages. The process is similar (though some differences remain) in other programming languages. 
+
+The code below computes a mathematical expression, and it requires that the argument be a positive integer. We thus check the argument and throw an exception if needed. 
+
+<<engine="python",eval=FALSE>>=
+import math
+
+def foo(x):
+  if not isinstance(x, int):
+    raise TypeError("arguments to foo should be integers")
+  if x <= 0:
+    raise ValueError("arguments to foo should be positive")
+  return(x + math.log(x))
+
+foo(-3)  # exception triggered and program halted 
+foo(3)  # never executed
+@
+
+In the example above, we did not have specific code to handle the thrown exception, and thus the program is halted immediately and never reaches the last line. Also, if we have a function that calls another function that raises an exception without exception handling code the program halts and no code afterwards is executed. 
+
+When the program is halted we get a printout of the traceback object that records the program path that lead to the exception (for example which function called the function that triggered the exception). This information is very useful in debugging and in understanding the behavior of complex code. For example, the traceback below shows the path \texttt{bar(3)} followed by \texttt{foo(-x)}.
+
+<<engine="python",eval=FALSE>>=
+def bar(x): 
+  foo(-x)
+  
+bar(3)  
+
+## ----------------------------------------------
+## ValueError   Traceback (most recent call last)
+## <ipython-input-17-2f0fa4d9f487> in <module>()
+## ----> 1 bar(3)
+##
+## <ipython-input-15-a80ffbcd5b6f> in bar(x)
+##      1 def bar(x):
+## ----> 2  foo(-x)
+##      3 
+
+## <ipython-input-12-1165b706a01c> in foo(x)
+##      3  raise TypeError("arguments to foo should be integers")
+##      4    if x <= 0:
+## ----> 5 raise ValueError("arguments to foo should be positive")
+##      6    return(x + math.log(x))
+##      7 
+##
+## ValueError: arguments to foo should be positive
+@
+
+\subsection{Handling Exceptions}
+
+In order to trigger a more specific handling of the exception (rather than simply terminate the program), we include code that may trigger exceptions in a \texttt{try}-\texttt{except} clause. The code follows the \texttt{try} keyword is executed, and if an exception is triggered execution passes immediately to the code following the \texttt{except} keyword that handles the exception. After exception handling code is finished, the program continues to execute the code following the \texttt{except} block (rather than terminate).
+
+<<engine="python",eval=TRUE>>=
+import math
+
+def foo(x):
+  if not isinstance(x, int):
+    raise TypeError("arguments to foo should be integers")
+  if x <= 0:
+    raise ValueError("arguments to foo should be positive")
+  return(x + math.log(x))
+
+try: 
+  foo(-3)  # exception triggered and program halted 
+  foo(3)  # never executed
+except: 
+  print("exception in sequence of foo() calls")
+print("program resumes execution and is not terminated")
+@
+
+The syntax above catches and handles all exceptions in the same way. We can write custom handling code for different exceptions by including multiple 
+\texttt{except} blocks followed by the exception class that they handle. If there are multiple \texttt{except} blocks and an exception occurs, the program executes the exception handling code and then continues after the last \texttt{except} block. An optional block \texttt{else:} is called if no exception has been handled (\texttt{else:}) and an optinoal block \texttt{finally:} is always called and can be used to host cleanup code (e.g., closing a file or database connection).
+
+<<engine="python",eval=TRUE>>=
+import math
+
+def foo(x):
+  if not isinstance(x, int):
+    raise TypeError("arguments to foo should be integers")
+  if x <= 0:
+    raise ValueError("arguments to foo should be positive")
+  return(x + math.log(x))
+
+try: 
+  foo(-3)  # exception triggered and program halted 
+  foo(3)  # never executed
+except TypeError:  # handle TypeError exceptions
+  print("Incorrect Type in sequence of foo() calls")
+except ValueError:  # handle ValueError exceptions
+  print("Non-positive value in sequence of foo() calls")
+else: 
+  print("no exceptions handled")  
+finally:
+  print("always handled")  
+print("program resumes execution and is not terminated")
+@
+
+If we want to write \texttt{except} blocks that handles exceptions, but also terminate the program with printing the traceback object to the console (as if the exception has never been caught) we can include the \texttt{raise} keyword (with no arguments) at the end of the appropriate \texttt{except} block. In this case, the code in the \texttt{except} block up to the \texttt{raise} keyword is executed followed by program termination and printing of the traceback object.
+
+If there are multiple \texttt{except} blocks and an exception is raised, only the first match will execute. An exception can match an \texttt{except} block also if it specifies an exception class that it inherits from. This is useful for handling some exceptions in a particular way, and all other exception in a default way: include the specific exceptions in separate \texttt{except} blocks first followed by an \texttt{except Exception:} block that will handle all remaining exceptions (since all exception classes inherit from the base Exception class). Since the first matching \texttt{except} block is used, multiple \texttt{except} blocks are ordered from more specific exceptions to less specific exceptions.
+
+If we want access to the exception object in the \texttt{except} block, we can modify the syntax \texttt{except TypeError:} to \texttt{except TypeError as e:} that exposes the exception object as \texttt{e} in the block.
+
+<<engine="python",eval=TRUE>>=
+import math
+
+def foo(x):
+  if not isinstance(x, int):
+    raise TypeError("arguments to foo should be integers")
+  if x <= 0:
+    raise ValueError("arguments to foo should be positive: " + str(x))
+  return(x + math.log(x))
+
+try: 
+  foo(-3)  # exception triggered and program halted 
+  foo(3)  # never executed
+except TypeError:  # handle TypeError exceptions
+  print("Incorrect Type in sequence of foo() calls")  
+except ValueError as e:  # handle ValueError exceptions
+  print("Non-positive value in sequence of foo() calls:")
+  print(e.args)
+print("program resumes execution and is not terminated")
+@
 
 
 
-%-----------------------------------
+\subsection{Custom Exceptions}
+
+In some cases it is useful to define new exception classes that represent specific situations. To  do so we simply specify that it inherits from the base \texttt{Exception} class. The class name usually communicate what went wrong. 
+
+
+<<engine="python",eval=FALSE>>=
+import math
+
+# Custom exception: either type or value error
+class InvalidTypeOrValueError(Exception):
+  def __init__(self, a_val, a_type):  # custom constructor
+    # calls super class constructor (Python 3 syntax)
+    super().__init__("incorrect type and value. " + 
+      "val: " + str(a_val) + " " + "type: " + str(a_type))
+    self.val = a_val
+    self.type = a_type
+    
+def foo(x):
+  if not isinstance(x, int) or x<=0:
+    raise InvalidTypeOrValueError(x,type(x))
+  return(x + math.log(x))
+  
+try: 
+  foo(-3) 
+  foo(3)
+except InvalidTypeOrValueError as e:
+  print("Incorrect type or value in sequence of foo() calls: ")
+  print(e.args)
+
+## Incorrect type or value in sequence of foo() calls: 
+## ("incorrect type and value. val: -3 type: <class 'int'>",)
+@
+
+%-------------------------------------------------------------------
 \section{Documentation Tools}
+
 It is useful to write self-documenting code in the sense that the source code files contain significant documentation about the code implementation as well as how to use it. Many programming languages have a built-in documentation format that if the programmer adheres to can generate separate documentation files based on the in-code comments. Below we describe first Docstrings - a built-in documentation format used in Python, and later describe Javadoc - a similar format that is used in Java.
 
 \subsection{Docstrings} \label{sec:tools:docstrings}
@@ -65,7 +225,7 @@ help(Point)  # shows class doctring
 help(Point.displayPoint)  # shows method docstring
 @
 
-Docstrings can be accessed by the __doc__ attribute on objects inside the program or by typing \texttt{help(X)} in the Python prompt where \texttt{X} is the name of a class, method, function, or module.
+Docstrings can be accessed by the \_\_doc\_\_ attribute on objects inside the program or by typing \texttt{help(X)} in the Python prompt where \texttt{X} is the name of a class, method, function, or module.
  
 The docstring for a class should summarize its behavior and list the public methods. The docstring of a function or method should describe its effect, the arguments, the return values, and any restriction on its usage. The docstring for a module should list the classes and functions that are exported by the module with brief high-level descriptions.
 
@@ -113,6 +273,7 @@ A more sophisticated and recent alternative to pydoc is the Sphinx program that 
 \subsection{Unit Testing in Java with JUnit}
 \subsection{Unit Testing in Python with Nose}
 
+%-----------------------------------
 \section{Program Diagnostics}
 \subsection{Debugging}
 
@@ -204,6 +365,7 @@ See \href{http://cran.r-project.org/doc/manuals/R-exts.pdf}{http://cran.r-projec
 \subsection{Speed Profiling}
 \subsection{Memory Profiling}
 
+%-------------------------------------------------------------------
 \section{Libraries}
 \subsection{BLAS, LINPACK, and LAPACK}
 \subsection{Eigen and Armadillo}

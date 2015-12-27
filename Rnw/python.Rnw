@@ -110,6 +110,7 @@ import subprocess as sp
 sp.call(["ls", "-al"])
 @
 
+The function \texttt{os.chdir(path)} changes the current directory inside Python code. The function \texttt{os.getcwd()} returns the current directory.
 
 %-------------------------------------------------------
 \section{Scalar Data Types and Operators}
@@ -1059,16 +1060,26 @@ Pandas offers much more functionality for manipulating dataframes, handling miss
 
 To read from a file or write to a file in Python, the file must first be opened in the appropriate mode using the \texttt{open} function (\texttt{r} for reading and \texttt{w} for writing). The object returned from the open function can then be used to read from the file or write to it in a variety of ways. The \texttt{close} function should be called at the end of the reading or writing process. 
 
-A simple way to read a text file is to read it line by line using a \texttt{for} loop. The code below illustrates this. The string object \texttt{line} appears with the end-of-line marker that can be removed using the \texttt{rstrip} function.
+A simple way to read a text file is to read it line by line using a \texttt{for} loop. The code below illustrates this by creating a list of words in a text file. The iterator returned from the file opening function iterates of text lines, and the function fucnction \texttt{split} converts a string representing a line into a list of strings separated by whitespaces representing words. 
 
-<<os1, engine="python",eval=FALSE>>=
+<<engine="python",eval=FALSE>>=
 # open file for reading
-f = open("/home/joe/f1.txt", "r")
-for line in f:  # iterate over all lines in the file
-  line_proc = line.rstrip()  # strip end of line marker
-  foo(line_proc)  # do something with line_proc
+f = open("mobydick.txt", "r")
+wordsList = list()
+for line in f:  # iterate over all lines in file
+  wordsInLine = line.split()  # create a list of words in line
+  wordsList = wordsList + wordsInLine
 f.close()
 @
+
+Continuing the example above, we convert the list into a set, an operation that removes duplicates. Doing so produces a list of distinct words known as the text document vocabulary. The second line below creates a restricted vocabulary containing words of length 10 or more.
+
+<<engine="python",eval=FALSE>>=
+V = set(wordsList)  # list of distinct words
+Vp=[w for w in V if len(w) > 10]  # list of long words in V
+@
+
+Above, the structure \texttt{[w for w in V if len(w) > 10]} returns a list of all elements in \texttt{V} satisfying the specified condition (in this case distinct words in Moby Dick having 10 or more characters). This structure,  called list comprehension, is very powerful and can be used to create complex operations in a single line. It can be modified to \texttt{[f(w) for w in V if len(w) > 10]} for obtaining a list of the outputs \texttt{f(w)} of words in \texttt{V} with the required condition. 
 
 The functions \texttt{write} or \texttt{writelines} can be used to write contents to a file. The code below demonstrates the use of \texttt{write}. Note that the file is opened in a writing mode (indicated by the second argument \texttt{w} to the \texttt{open} function).
 

@@ -1,0 +1,189 @@
+\documentclass[twoside,10pt]{book}
+\usepackage{amsmath,amsfonts,amsthm,hyperref,subfigure,verbatim,natbib,listings,courier,caption,color,enumitem,makeidx}
+%\usepackage[twoside,paperheight=9.61in,paperwidth=6.69in,bottom=0.3in,top=0.3in,inner=0.8in,outer=0.5in,includehead,includefoot]{geometry}
+\usepackage[twoside,paperheight=9.61in,paperwidth=6.69in,bottom=0.65in,top=0.65in,inner=1in,outer=0.85in,includehead,includefoot]{geometry}
+\usepackage{mymath}
+\usepackage{tocbibind}
+
+\makeatletter
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\definecolor{fgcolor}{rgb}{0,0,0}
+
+\DeclareCaptionFont{white}{\ttfamily\color{white}}
+\DeclareCaptionFormat{listing}{\colorbox[cmyk]{0.43,0.35,0.35,0.01}{\parbox{\textwidth}{\hspace{15pt}#1#2#3}}}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white,singlelinecheck=false, margin=0pt, font={bf,small}}
+
+\makeatother
+
+\lstset{ %
+  language=R,
+  basicstyle=\small\ttfamily,
+  numbers=none,
+%  numbers=left,                 % where to put the line-numbers
+%  numberstyle=\tiny\color{gray},  % line number style
+%  stepnumber=2,                   % the step between two line-numbers
+%  numbersep=5pt,                  % how far the line numbers from code
+  backgroundcolor=\color{white},  % choose the background color
+  showspaces=false,               % show spaces
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings
+  frame=false,                   % (single) adds a frame around the code
+%  rulecolor=\color{black},
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=n,                   % caption-position at bottom
+  breaklines=true,                % sets automatic line breaks
+  breakatwhitespace=false,        % breaks only at whitespace
+  title=\lstname,     % filename included with \lstinputlisting;
+  keywordstyle=\bfseries\color[rgb]{0,0,1},
+  commentstyle=\color[rgb]{0.133,0.545,0.133},
+  stringstyle=\color[rgb]{0.627,0.126,0.941},
+  escapeinside={\%*}{*)},            %add a comment within your code
+  identifierstyle=\ttfamily,
+  morekeywords={*,...}               % add more keywords
+%  xleftmargin=17pt,
+%  framexleftmargin=17pt,
+%  framexrightmargin=5pt,
+%  framexbottommargin=4pt
+}
+
+\makeindex
+
+\begin{document}
+
+<<setup, echo=FALSE>>=
+opts_chunk$set(
+		background=c(1,1,1),
+		size="small",
+        fig.width=5,
+        fig.height=3,
+        comment="##",
+        prompt=FALSE,
+        fig.align="center",
+        fig.path="cache/",
+        dev="tikz",
+        results="markup",
+		error=FALSE,
+        warning=FALSE,
+        message=FALSE,
+		highlight=FALSE)
+opts_knit$set(use.highlight = FALSE)
+knit_hooks$set(inline = function(x) {
+    if (is.numeric(x)) return(knitr:::format_sci(x, 'latex'))
+    x = as.character(x)
+    knitr:::hilight_source(x, 'latex', list(prompt=FALSE, size='normalsize'))
+}
+)
+library(ggplot2)
+library(reshape2)
+library(tikzDevice)
+library(lattice)
+library(klaR)
+library(mclust)
+library(Hmisc)
+library(mvtnorm)
+library(gtools)
+library(expm)
+library(sets)
+library(MASS)
+theme_set(theme_bw(base_size=10))
+theme_update(axis.title.x=element_text(vjust = -0.1))
+theme_update(axis.title.y=element_text(angle=90, vjust=0.12))
+theme_update(plot.title=element_text(vjust = 1))
+update_geom_defaults("point",aes(size=3))
+update_geom_defaults("line",aes(size=1))
+set.seed(1)
+options(width=45)
+@
+
+
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+\begin{titlepage}
+\begin{center}
+\textsc{\LARGE The Analysis of Data}\\[0.5cm]
+\textsc{\Large Volume 2}\\[2.5cm]
+\HRule \\[0.4cm]
+{ \huge \bfseries Computing with Data}\\[0.4cm]
+\HRule \\[1.5cm]
+{\Large Guy Lebanon}\\ [0.5cm]
+{\large LinkedIn}
+\vfill
+{\large First Edition\\[0.3cm] TAOD Press \\[0.3cm] \today}
+\end{center}
+\end{titlepage}
+
+\newpage   
+
+\thispagestyle{empty}
+\cleardoublepage
+
+\thispagestyle{empty}
+\null\vspace{\stretch{1}}
+\begin{flushright}
+To Anat Lebanon
+\end{flushright}
+\vspace{\stretch{2}}\null
+
+\newpage
+
+\thispagestyle{empty}
+\tableofcontents
+
+\chapter{Hardware}
+<<hardware,child='hardware.Rnw',eval=FALSE>>=
+@
+
+\chapter{The Operating System}
+<<os,child='os.Rnw',eval=FALSE>>=
+@
+
+\chapter{C++ Programming}
+<<cpp, child='c.Rnw',eval=FALSE>>=
+@
+
+\chapter{Java Programming}
+<<java, child='java.Rnw',eval=FALSE>>=
+@
+
+\chapter{Python Programming}
+<<python, child='python.Rnw',eval=TRUE>>=
+@
+
+\chapter{R Programming}
+<<child='Rprog.Rnw',eval=FALSE>>=
+@
+
+% Sep-Oct
+\chapter{Programming Tools}
+<<child='tools.Rnw',eval=0>>=
+@
+
+\chapter{Data Visualization}
+<<child='graphics.Rnw',eval=FALSE>>=
+@
+
+\chapter{Data Processing}
+<<child='preprocessing.Rnw',eval=FALSE>>=
+@
+
+% Aug
+\chapter{Data Storage}
+<<child='data.Rnw',eval=FALSE>>=
+@
+
+% Nov-Dec
+\chapter{Cloud Computing}  
+
+\cleardoublepage
+
+%\bibliographystyle{plain}
+%\bibliography{references}
+
+\cleardoublepage
+% \addcontentsline{toc}{chapter}{Index}
+\printindex
+\end{document}
