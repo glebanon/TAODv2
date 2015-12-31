@@ -1,52 +1,108 @@
 %-----------------------------------
 \section{Version Control}
 
-Virtually all organized software development processes use version control. Version control can keep track of different versions of the software and enables reverting to a version that is different from the current one. This is very useful as often a problem is discovered in the software that necessitates an immediate roll back to a previous version without the problem (while the problem is studied and fixed). 
+Version control systems manage different versions of the software and it enables switching back and forth between different versions. This is very useful since most development process are composed of many small incremental steps rather than one single monolithic and immediate contribution. For example, if a problem is discovered in one of the recent version the version control system can revert back to an earlier version without the problem right away. After the revert step the problem can be studied and fixed with less urgency. 
 
-Version control is useful for a single developer who needs assitance managing the different versions of the code. Version control is extremely useful when several developers collaborate on a code base simulatenously. The developers can branch off the current version and work on their own projects, and later merge back their changes so that they are available to the other developers. The version control system takes care of merging multiple versions of the code assuming that there are no conflicts (if there are the developers are prompted to resolve the conflicts before the merge takes place).
+Coneptually, each version can be thought of as a node in a graph with outgoing edges to another node that represents the previous version. Version control system typically store only the differences between subsequent nodes in order to reduce storage space and avoid unnecessary redundency. Each version or node is annotated with the author, the date and time the version was committed to the system, and an explanation of the changes. 
 
-There are two types of version control systems: centralized and distributed. Centralized version control systems such as CVS, Subversion, and Perforce, have a single server that contains all the versioned files, and several clients that check out files from the centaralized repository. In order to access the version control system on the centralized repository, such systems need to communicate over the netwwork. 
+Version control is useful also for a single developer, but it is extremely useful when several developers simulatenuosly collaborate on a code base. Developers working on different projects can work on a part of the system by branching off from the current version, creating a version dedicated to their project that does not impact other versions. When the project work is done the separate branch can be merged back into the main branch that represents the current version of the stable system. Merging one branch into another is done automatically by the version control system, unless there are conflicts that it cannot resolve (in which case the developer needs to resolve the merge conflicts manually).
 
-In distributed version control systems (such as Git or Mercurial), clients do not simply check out the latest snapshot of the files. Instead, the clients mirror the repository completely. There are several advantaged over centralized version control system: (a) each client stores a complete clone of the repository, which is useful for backup purposes, (b) much of the version control functionality can be done without network, and (c) many operations are much faster since they can be carried out locally. Nevertheless, in distributed version control system there is often a unique server that is designated as the primary server and that can be trusted to have the latest version. 
+There are two types of version control systems: centralized and distributed. Centralized version control systems such as CVS, Subversion, and Perforce, have a single server that contains all the repository information, and several clients that check out files from the centaralized repository. In order to access the version control system on the centralized repository, such systems need to communicate over the netwwork. 
 
-We start below with a description of the Git version control system. Git is one of the most popular version control system and has some advantages over older systems. It is also open source, which makes it attractive for low cost companies or academic researchers. We then describe Github, a hosted version of Git that has some additional functionality. We conclude with an older version control system called Subversion that is still widely used.
+In distributed version control systems (such as Git or Mercurial), clients do not simply check out the latest snapshot of the files. Instead, the clients mirror the entire version control repository including the complete version history. Distributed version control systems have  several advantaged over centralized version control system: (a) each client stores a complete clone of the repository, which is useful for backup purposes, (b) much of the version control functionality can be done without network connectivity, and (c) many operations are much faster since they can be carried out locally. 
+
+In some cases, distributed version control system do have a single unique server that is designated as the primary server and that can be trusted to have the latest version. New clients typically copy the repository from that designated server, but as described above all clients hold a copy of the entire version history. 
+
+We start below with a description of Git, a popular distributed version control system. It is also open source, which makes it attractive for low cost companies or academic researchers and forms the base for GitHub, a popular version control system hosted in the cloud that has some additional functionality. We conclude with a description of Subversion, an older centralized version control system that is still in wide use.
 
 \subsection{Git}
 
-Git was created by Linus Torvalds (the inventor of Linux) in 2005 and has since then increased in popularity to the point where it is today perhaps the most popular version control system. Google, Microsoft, Twitter, LinkedIn and many other companies use Git. 
+Git was created by Linus Torvalds (the inventor of  Linux) in 2005 and has since then increased in
+popularity to the point where it is today  perhaps the most popular version  control system. Many
+major companies such  as Google, Microsoft, Twitter, and  LinkedIn use Git, as well  as many small
+companies and start-ups
 
-We start below by covering local Git functionality (the repository exists on a single machine). Afterwards, we cover the more interesting functionality where there are mutliple Git repositories on different clients.
+We start below by covering local Git functionality, where the repository exists on a single machine. Afterwards, we cover the case where multiple clients (or a client and a server) have copies of the same repository.
 
-\subsubsection{Local Git}
+\subsubsection{Basic Functionality of Local Git}
 
-A Git respository is a collection of files in a directory that contains a \texttt{.git} subdirectory. The files represent the current working version and the \texttt{.git} subdirectory contains additional information regarding other versions of the repository. 
+A Git respository is a collection of files in a directory that contains a \texttt{.git} subdirectory. The files represent the current working version and the \texttt{.git} subdirectory contains additional information that allows tracking different versions and switching between them. 
 
-Typically, a Git repository is created by cloning an existing respository from a different client. But to start an empty repository from scratch type \texttt{git init respositoryName} (first \texttt{cd} to the appropriate directory in the file system where you want the repository to be). A new directory is created with the respository name that has a \texttt{.git} subdirectory to store the version control information. 
-
-To add files to the repository create a file and then type \texttt{git add fileName}. At that point the file is added to a logical version of the repository called ``the staging area''. The added files that are currently in the staging area are not yet added to the repository. To update the respository with the new files type the following command
+After installing Git (if it is not already installed on your computer by default), the developer needs to enter his or her name and email address. These details will be recorded as part of the version log messages and are very useful when collaborating with other developers. The name and email address can be entered in the shell as follows.
 
 <<eval=FALSE>>=
-git commit --message "short message describing change"
+git config --global user.name "Guy Lebanon"
+git config --global user.email "glebanon@gmail.com"
 @
 
-If the message flag is missing Git will open up an editor and prompt you to enter a message in it. Git will commit upon exiting the editor. 
+Git occasionally uses an editor to prompt the developer to enter a message describing the new version. To inform Git about your favorite editor set the \texttt{GIT\_EDITOR} shell environment variable. For example, in bash or zshell we can set the \texttt{GIT\_EDITOR} to the Emacs editor using the following shell command \texttt{export GIT\_EDITOR="emacs"}. It is useful to add such a line in your shell initialization file (\texttt{.zshrc} for zshell and \texttt{.bashrc} in bash).
 
-Files in the Git directory that are part of the index or repository are called ``tracked files''. Other files are ``untracked files'' and unless explicitly added to the respository using \texttt{git add} will not be added to it. The command \texttt{git status} shows the list of tracked and untracked files and the current status of the staging area.
-
-The command \texttt{git commit} can also update the repository index with new versions of existing files. Specifically, after editing the respository files we can update the respository index (in the \texttt{.git} subdirectory) by typing the following command.
+Typically, a Git repository is created by cloning an existing respository from a different computer. But to start an empty repository from scratch use the following command sequence.
 
 <<eval=FALSE>>=
-git commit --message "short message describing change" fileNames
-@ 
+# change to parent directory where repository should lie
+cd dir_name
+# create a new directory representing repository
+git init respository_name  
+# enter directory representng new repository
+cd respository_name  
+@
 
-Alternatively, we can type the following command to commit all changes in the tracked files of the respository (in both cases the message flag can be suppressed in order to enter the description in an editor window).
+The new directory will have a \texttt{.git} subdirectory that stores the version control information. 
+
+To add files to the repository, create a file in the respoistory directory and then type \texttt{git add file\_name}. At that point the file is added to a logical version of the repository called ``the staging area''. The added files that are currently in the staging area are not yet added to the repository. To update the respository with the new files we need to type \texttt{git commit}. Using the sequence \texttt{git add X} and \texttt{git commit} we can add multiple files and directories to the repository. See below for a short example. 
 
 <<eval=FALSE>>=
-git commit -a --message "short message describing change" fileNames
+cd dir_name  
+git init respository_name  
+cd respository_name  
+touch new_file  # create an empty file
+git add new_file  # add new file to staging area
+git commit -m "demo commit: adding an empty file new_file"
+
+## [master (root-commit) 42a72e0] demo
+## 1 file changed, 0 insertions(+), 0 deletions(-)
+## create mode 100644 a
+@
+
+The message flag \texttt{-m} followed by the comment describing the version may be ommited, in which case Git will open up an editor and prompt you to enter the commit message in it (see above on how to inform Git on which editor to use). Git will execute the commit with the edited message upon saving and exiting the editor. 
+
+Files in the Git directory that are part of the index or repository are called ``tracked files''. Other files are considered ``untracked files'' and unless explicitly added to the respository using \texttt{git add} will not be added to it. The command \texttt{git status} shows the list of tracked and untracked files and the current status of the staging area.
+
+<<eval=FALSE>>=
+git status
+
+## On branch master
+## nothing to commit, working directory clean
+@
+
+The command \texttt{git commit} can also update the repository with new versions of existing files. Specifically, after editing the respository files we can update the respository (in the \texttt{.git} subdirectory) with the new version by \texttt{git commit file\_name}. See below for a short example.
+
+<<eval=FALSE>>=
+cd dir_name  
+git init respository_name  
+cd respository_name  
+touch new_file  # create an empty file
+git add new_file  # add new file to staging area
+# commit addition
+git commit -m "demo commit: adding an empty file new_file"  
+echo 123456 >>! new_file  # add some text to empty file
+# commit new version of new_file
+git commit -m "added 123456 to file" new_file  
+
+## [master 9110e49] added 123456 to file
+## 1 file changed, 1 insertion(+)
 @ 
 
+The command \texttt{git commit -a} commit changes to all files that are tracked by the repository and have changed since the last commit.  
 
-So far we have considered a linear development process where each commit updates the previous commit. Using the analogy of a directed graph where nodes are commits and outgoing edges from a commit node represent previous commits, this corresponds to a linear graph or chain leading from the most recent commit to the previous commit until we get to the first commit (Figure~\ref{fig:git:linear} visualizes this development pattern).
+<<eval=FALSE>>=
+git commit -a -m "updating multiple files"
+@ 
+
+\subsubsection{Branches and Merges}
+
+We considered above a linear development process where each commit updates the previous commit. Using the analogy of a directed graph where nodes are commits and outgoing edges connect commits to previous commits we have a linear graph leading from the most recent commit back in time to previous commits until we get to the first commit. Figure~\ref{fig:git:linear} visualizes this development pattern.
 
 \begin{center}
 \begin{figure}
@@ -55,11 +111,6 @@ So far we have considered a linear development process where each commit updates
 \label{fig:git:linear}
 \end{figure}
 \end{center}
-
-In some cases it is desirable to branch out from the main line of development and create a new line of commits, for example when developing a new feature in a system. The main line can represent the stable system and subsequent commits in that line can capture minor bug fixes, while the branch line can have a line of commits representing work on the new feature. When the new feature is complete the branch can be merged with the main line (more branch merges that soon). Figure~\ref{fig:git:branch} illustrates a development pattern involving two branches.
-
-To create a branch (without moving to it) type \texttt{git branch branchName} (the command \texttt{git branch} lists all branches). To move from the current branch to the new branch type \texttt{git checkout branchName}. Any subsequent commits will update the specified branch. 
-
 
 \begin{center}
 \begin{figure}
@@ -70,38 +121,187 @@ To create a branch (without moving to it) type \texttt{git branch branchName} (t
 \end{center}
 
 
+In some cases it is desirable to branch out from the main line of development (usually called the \texttt{master branch} and create a new line of commits in parallel, for example when developing a new feature in a system. For example, the master branch can reprsent the stable system and subsequent commits in master represent minor bug fixes. The secondary branch may represent work on a new feature that is added to the system and its line of commits represent work on that project. When the new feature is complete the branch can be merged back into the master branch. Figure~\ref{fig:git:branch} illustrates such a development pattern involving two branches.
 
-Referring to specific commits in Git is usually done via refs, which are references to commits. The ref \texttt{HEAD} refers to the the commit that you most recently checked out. It updates automatically to the most recent commit as the developer checks in or checks out new versions. 
+The command \texttt{git branch branch\_name} creates a branch without switching to it. The command \texttt{git branch} lists all branches. To switch to a different branch type \texttt{git checkout branch\_name}. Any subsequent commits will update the new branch. The initial branch is called \texttt{master}. 
 
-By default the initial branch is called \texttt{master}. The keyword \texttt{master} or other branch names are refs that self update to refer to the commits at the top of the corresponding branches. If you most recently checked out \texttt{master} then \texttt{HEAD} and \texttt{master} refer to the same commit. Appending a branch name (including \texttt{master}) with $\sim$\texttt{k} creates a ref to the commit that is \texttt{k} commits before the commit at the top of the branch (appending \^{} corresponds to $\sim$1 and \^{}\^{} corresponds to $\sim$2). We can also refer to commits using refs that are generated automatically by a secure hash algorithm (SHA-1). To see the SHA-1  codename that correspond to one of the refs above type  \texttt{git rev-parse refname} where \texttt{refname} represents the ref. 
+<<eval=FALSE>>=
+git branch new_branch  # create a new branch
+git branch  # list all branches
+
+## * master
+##   new_branch
+git checkout new_branch  # move to new_branch
+git branch  # list all branches
+
+##   master
+## * new_branch
+@ 
+
+Referring to specific commits in Git is usually done via refs, which are references to commits. The ref \texttt{HEAD} refers to the the most recent commit on the current branch (it updates automatically). Branch names are also refs that update automatically to refer to the most recent commit in the corresponding branch. If the current checked out branch is \texttt{master} then the two refs \texttt{HEAD} and \texttt{master} refer to the same commit. 
+
+Appending a branch name (including \texttt{master}) with $\sim$\texttt{k} creates a ref to the commit that is \texttt{k} commits before the commit at the top of the branch. Appending to the branch name \^{} corresponds to $\sim$1 and \^{}\^{} corresponds to $\sim$2 (for example \texttt{master\^{}\^{} is equivalent to \texttt{master}$\sim$}\texttt{2}). 
+
+Commits can also be identified by refs generated automatically using a secure hash algorithm (SHA-1)\footnote{SHA-1 algorithm is using hashing to assign codenames to commits rather than sequential numbers due to the distributed nature of Git (when you commit a change, Git doesn't know what other commits occurred on other clients. The codenames are displayed as 40 character hexadecimal strings.}. To see the SHA-1 codename that correspond to one of the refs above type  \texttt{git rev-parse ref\_name} where \texttt{ref\_name} represents the ref. The 40 character SHA-1 refs can also be replaced by shortened SHA-1 versions.
 
 <<engine="bash">>=
-git rev-parse master~2
+git rev-parse master~2  # display SHA-1 codename
+git rev-parse --short master~2  # display shortened SHA-1 codename
 @
 
-Branch names are easier to remember and frequently more useful than refs generated by the SHA-1 algorithm.
+Branch names are easier to remember and thus usually more useful than refs generated by the SHA-1 algorithm.
 
-The command \texttt{git log} prints the respository history: the commits annotated with dates, author, files that were changed, and the messages that were used to document the commits. Note below the SHA-1 codes displaying the most recent commits and the commit messages.
+To replace the current version with an alternative version we use \texttt{git checkout ref\_name}. This can replace the current version with an older or a newer version on the same branch or on a different branch depending on the specified ref. The example below adds text to a new file, adds some more text, and then reverts to the previous version. 
+
+<<eval=FALSE>>=
+git init demo_repos
+cd demo_repos
+echo 123 > demo_file
+git add demo_file
+git commit -a -m "adding demo_file containing 123"
+echo 456 >>! demo_file
+git commit -a -m "adding 456 to demo_file"
+cat demo_file
+
+## 123
+## 456
+git checkout master~1  # change version to previous version
+cat demo_file
+
+## 123
+@
+
+At some point we may want to merge one branch into another. For example, in the situation described in Figure~\ref{fig:git:branch} we may wish to merge the feature branch into the master branch after the the feature development work is finished. The command \texttt{git merge branch\_name} merges \texttt{branch\_name} into the current branch. 
+
+<<eval=FALSE>>=
+git init demo_repos
+cd demo_repos
+echo 123 > master_file
+git add master_file
+git commit -a -m "added master file with 123"
+
+## [master (root-commit) cb133d5] added master file with 123
+##  1 file changed, 1 insertion(+)
+##  create mode 100644 master_file
+git branch feature1
+git checkout feature1
+
+## Switched to branch 'feature1'
+echo abc > feature_file
+git add feature_file
+git commit -a -m "added feature_file with abc"
+
+## [feature1 5c82dfc] added feature_file with abc
+## 1 file changed, 1 insertion(+)
+#3 create mode 100644 feature_file
+git checkout master
+
+## Switched to branch 'master'
+git merge feature1  # merge feature1 branch into master
+
+## Updating cb133d5..5c82dfc
+## Fast-forward
+## feature_file | 1 +
+## 1 file changed, 1 insertion(+)
+## create mode 100644 feature_file
+
+ls  # both files appear in master after the merge
+## feature_file master_file
+@
+
+A merge creates a new commit that has two outgoing edges into the two merged commits (see Figure~\ref{fig:git:branch-merge}). After the merge, we can keep the merged branch alive and add more commits to it (possibly to be merged again later), or we may delete the branch that was merged and continue development from the current branch (for example \texttt{master}) and consider creating a new branch in the future if needed.
+
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.17]{pdf/git_branch_merge.pdf}
+\caption{A feature development branch merged into the master branch.}
+\label{fig:git:branch-merge}
+\end{figure}
+\end{center}
+
+Rebasing is a variation of merging that converts the parallel branches pattern in Figure~\ref{fig:git:branch} to a linear pattern with the branch that is rebased becoming a linear continuation of the current branch. To rebase a branch into the current branch use the command \texttt{git rebase branch\_name}. Figure~\ref{fig:git:branch-rebase} illustrates this process. Merge and rebase have different pros and cons and sometimes different organizations use one alternative over the other.
+
+<<eval=FALSE>>=
+git checkout feature1
+git rebase master  # rebase master into feature1 branch
+@
+
+
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.17]{pdf/git_branch_rebase.pdf}
+\caption{The master branch rebased into the feature development branch.}
+\label{fig:git:branch-rebase}
+\end{figure}
+\end{center}
+
+
+\subsubsection{Conflicts}
+
+When a merge is executed changes in the merged branch are incorporated into the current branch. If there are no conflicts (as in the example above where the work in the feature branch affects files that are different from the files that are modified in the master branch) the merge proceeds automatically. But in some cases there are conflicts that Git cannot resolve, for example if both commits modify the same line in the same file in different ways. In this case, conflicted merge modifies the conflicted files by inserting markers where there are conflicts. 
+
+Below is a portion of a file that underwent a merge with a conflict. Git edits the file and adds markers showing the conflict. It takes some experience to read the markers below, but basically content following \texttt{<<<<<<} marker corresponds to one version and content following \texttt{=======} corresponds to the other version. The marker \texttt{>>>>>>>} specifies the end of the conflict region. 
+
+\begin{verbatim}
+this part is in agreement between the two branches 
+  - no conflict exists
+
+<<<<<<< HEAD
+This is an edit in the incoming branch that conflicts 
+  with the existing branch
+
+=======
+...
+This is the edit in the current branch that conflicts 
+   with the incoming branch
+...
+>>>>>> current-branch
+...
+this part is in agreement between the two branches 
+   - no conflict exists
+...
+\end{verbatim}
+
+There are two basic ways of helping Git in resolving merge conflict. The first is to edit the files with the markers above, remove the markers and make sure the files contain the appropriately merged version. After the conflicts are resolved manually, we need to a perform a commit to inform Git that we resolved the conflict. The second way to resolve conflicts is to use a graphic merge tool, for example by running the command \texttt{git mergetool}.
+
+
+
+\subsubsection{Remote Git}
+
+In many cases developers need to work with Git respositories on other servers. In this case, the first stage is to clone the respository on a local computer using the \texttt{git clone respository} command where \texttt{respository} has a pattern such as \texttt{ssh://username@address.com/path/projectName.git}. For example the following command creates a cloned repository of the \texttt{projectName.git} repository in the local \texttt{projectName} directory. The server from which the repsository was cloned is referred to as \texttt{origin}.
+
+<<eval=FALSE>>=
+git clone ssh://username@address.com/path/projectName.git
+@
+
+At this point the developer can move into the newly created directory and start editing files, adding files, and committing as outlined in the previous section. One major difference is that the commit will be stored in the local index rather than other remote servers. To propagate the commits to other servers we need to execute the \texttt{git push} command that is usually preceeded by the \texttt{git pull} command. 
+
+The \texttt{git pull} command contacts \texttt{origin} and checks for recent updates. If a newer version is found on \texttt{origin}, that version is downloaded to the local directory and merged with the working version (if conflicts occur they need to be resolved manually). 
+The \texttt{git push} command transmits local commits to \texttt{origin}.
+
+\subsubsection{Additional Features}
+
+We describe below a few commonly used additional features of Git.
+
+We saw above how to add files to a Git repository. Git provides additional file system funcationality such as \texttt{git mv file1 file2} for moving or renaming a file and \texttt{git rm file} for removing a file. As in \texttt{git add} these commands also require a subsequent \texttt{git commit} command to update the repository with the change. 
+
+The command \texttt{git log} prints the respository history: the commits annotated with their date, author, files that were changed, and commit message. Note below the SHA-1 codes displaying the most recent commits and the commit messages.
 
 <<engine="bash">>=
 git log | head
 @
 
-The command \texttt{git diff} displays the difference between the current working version and the index staging area. The command \texttt{git diff} can also show differences between two other versions, but that requires passing references to the versions as arguments. For example, \texttt{git diff master}$\sim$1 \texttt{ master} prints diff between the commit on top of \texttt{master} and the one before it. 
+The command \texttt{git diff ref1 ref2} displays the difference between two references. For example, the command below prints the diff between the commit on top of \texttt{master} and the one before it. 
 
 <<engine="bash">>=
 git diff master~1 master | head 
 @
 
-The diff command prints the difference in the two commits in a specific format that takes some getting used to. In general lines that start with - represent deleted lines and lines that start with + represent new lines. 
+The format of the diff printout takes some getting uesd to. In general lines that start with a minus sign (-) represent deleted lines and lines that start with a plus sign (+) represent newly added lines. 
 
-\subsubsection{Remote Git}
+There are various tools that visualize the Git repository history as a directed graph, such as \texttt{gtk+} (Linux Gnome) and \texttt{gitx} (Mac OS). 
 
-\subsubsection{Additional Features}
-
-There are various visualization tools for Git that draw the repository history as a directed graph with each commit being a node having an outgoing edge to the previous commits. Examples of such tools are \texttt{gtk+} (Linux Gnome) and \texttt{gitx} (Mac OS). 
-
-The editor that Git starts automatically for prompting documentation of commits (without \texttt{--message} flags) can be set using the \texttt{GIT\_EDITOR} shell environment variable. For example, we can set it in ZShell to Emacs using \texttt{export GIT\_EDITOR="emacs"}.
+An optional file \texttt{.gitignore} in the main Git directory contains filenames or filename patterns (for example \texttt{*.log}) that should be ignored by the Git respository. This prevents Git from printing a long list of untracked files when executing the \texttt{git status} command that need not be tracked or considered for addition to the respository.
 
 
 \subsection{Github}
