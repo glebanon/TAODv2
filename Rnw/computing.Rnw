@@ -134,40 +134,39 @@ To Anat Lebanon
 \tableofcontents
 
 \chapter{Hardware}
-<<hardware,child='hardware.Rnw',eval=FALSE>>=
+<<hardware,child='hardware.Rnw',eval=TRUE>>=
 @
 
 \chapter{The Operating System}
-<<os,child='os.Rnw',eval=FALSE>>=
+<<os,child='os.Rnw',eval=TRUE>>=
 @
 
 \chapter{C++ Programming}
-<<cpp, child='c.Rnw',eval=FALSE>>=
+<<cpp, child='c.Rnw',eval=TRUE>>=
 @
 
 \chapter{Java Programming}
-<<java, child='java.Rnw',eval=FALSE>>=
+<<java, child='java.Rnw',eval=TRUE>>=
 @
 
 \chapter{Python Programming}
-<<python, child='python.Rnw',eval=FALSE>>=
+<<python, child='python.Rnw',eval=TRUE>>=
 @
 
 \chapter{R Programming}
-<<child='Rprog.Rnw',eval=FALSE>>=
+<<child='Rprog.Rnw',eval=TRUE>>=
 @
 
-% Sep-Oct
 \chapter{Programming Tools}
-<<child='tools.Rnw',eval=0>>=
+<<child='tools.Rnw',eval=TRUE>>=
 @
 
 \chapter{Data Visualization}
-<<child='graphics.Rnw',eval=FALSE>>=
+<<child='graphics.Rnw',eval=TRUE>>=
 @
 
 \chapter{Data Processing}
-<<child='preprocessing.Rnw',eval=FALSE>>=
+<<child='preprocessing.Rnw',eval=TRUE>>=
 @
 
 % Aug

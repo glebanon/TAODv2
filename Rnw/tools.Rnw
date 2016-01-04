@@ -15,7 +15,7 @@ In some cases, distributed version control system do have a single unique server
 
 We start below with a description of Git, a popular distributed version control system. It is also open source, which makes it attractive for low cost companies or academic researchers and forms the base for GitHub, a popular version control system hosted in the cloud that has some additional functionality. We conclude with a description of Subversion, an older centralized version control system that is still in wide use.
 
-\subsection{Git}
+\subsection{Git} \label{chap:tools:git}
 
 Git was created by Linus Torvalds (the inventor of  Linux) in 2005 and has since then increased in
 popularity to the point where it is today  perhaps the most popular version  control system. Many
@@ -100,6 +100,8 @@ The command \texttt{git commit -a} commit changes to all files that are tracked 
 git commit -a -m "updating multiple files"
 @ 
 
+The command \texttt{git reset --hard} resets the working directory to the last previous commit. This is useful if you made some changes that you regret but did not commit them yet.
+
 \subsubsection{Branches and Merges}
 
 We considered above a linear development process where each commit updates the previous commit. Using the analogy of a directed graph where nodes are commits and outgoing edges connect commits to previous commits we have a linear graph leading from the most recent commit back in time to previous commits until we get to the first commit. Figure~\ref{fig:git:linear} visualizes this development pattern.
@@ -120,10 +122,9 @@ We considered above a linear development process where each commit updates the p
 \end{figure}
 \end{center}
 
+In some cases it is desirable to branch out from the main line of development (usually called the \texttt{master branch} and create a new line of commits in parallel, for example when developing a new feature in a system. For example, the master branch can reprsent the stable system and subsequent commits in master represent minor bug fixes. The secondary branch may represent work on a new feature that is added to the system and its line of commits represent work on that project. When the new feature is complete the branch can be merged back into the master branch. Figure~\ref{fig:git:branch} illustrates such a development pattern involving two branches. Keeping isolated lines of development out of the main branch prevents incorporating unstable code to the main branch. 
 
-In some cases it is desirable to branch out from the main line of development (usually called the \texttt{master branch} and create a new line of commits in parallel, for example when developing a new feature in a system. For example, the master branch can reprsent the stable system and subsequent commits in master represent minor bug fixes. The secondary branch may represent work on a new feature that is added to the system and its line of commits represent work on that project. When the new feature is complete the branch can be merged back into the master branch. Figure~\ref{fig:git:branch} illustrates such a development pattern involving two branches.
-
-The command \texttt{git branch branch\_name} creates a branch without switching to it. The command \texttt{git branch} lists all branches. To switch to a different branch type \texttt{git checkout branch\_name}. Any subsequent commits will update the new branch. The initial branch is called \texttt{master}. 
+The command \texttt{git branch branch\_name} creates a branch without switching to it. The command \texttt{git branch} lists all branches. To switch to a different branch type \texttt{git checkout branch\_name}. Any subsequent commits will update the new branch.  The initial branch is called \texttt{master}. 
 
 <<eval=FALSE>>=
 git branch new_branch  # create a new branch
@@ -140,7 +141,7 @@ git branch  # list all branches
 
 Referring to specific commits in Git is usually done via refs, which are references to commits. The ref \texttt{HEAD} refers to the the most recent commit on the current branch (it updates automatically). Branch names are also refs that update automatically to refer to the most recent commit in the corresponding branch. If the current checked out branch is \texttt{master} then the two refs \texttt{HEAD} and \texttt{master} refer to the same commit. 
 
-Appending a branch name (including \texttt{master}) with $\sim$\texttt{k} creates a ref to the commit that is \texttt{k} commits before the commit at the top of the branch. Appending to the branch name \^{} corresponds to $\sim$1 and \^{}\^{} corresponds to $\sim$2 (for example \texttt{master\^{}\^{} is equivalent to \texttt{master}$\sim$}\texttt{2}). 
+Appending a branch name (including \texttt{master}) with \~{}\texttt{k} creates a ref to the commit that is \texttt{k} commits before the commit at the top of the branch. Appending to the branch name \^{} corresponds to \~{}1 and \^{}\^{} corresponds to \~{}2 (for example \texttt{master\^{}\^{}} is equivalent to \texttt{master}\~{}\texttt{2}). 
 
 Commits can also be identified by refs generated automatically using a secure hash algorithm (SHA-1)\footnote{SHA-1 algorithm is using hashing to assign codenames to commits rather than sequential numbers due to the distributed nature of Git (when you commit a change, Git doesn't know what other commits occurred on other clients. The codenames are displayed as 40 character hexadecimal strings.}. To see the SHA-1 codename that correspond to one of the refs above type  \texttt{git rev-parse ref\_name} where \texttt{ref\_name} represents the ref. The 40 character SHA-1 refs can also be replaced by shortened SHA-1 versions.
 
@@ -149,7 +150,7 @@ git rev-parse master~2  # display SHA-1 codename
 git rev-parse --short master~2  # display shortened SHA-1 codename
 @
 
-Branch names are easier to remember and thus usually more useful than refs generated by the SHA-1 algorithm.
+Another possibility to refer to commits is using tags. We can create a user specifie tag to annotate the current commit using the command \texttt{git tag tag\_name}.
 
 To replace the current version with an alternative version we use \texttt{git checkout ref\_name}. This can replace the current version with an older or a newer version on the same branch or on a different branch depending on the specified ref. The example below adds text to a new file, adds some more text, and then reverts to the previous version. 
 
@@ -170,6 +171,9 @@ cat demo_file
 
 ## 123
 @
+
+We can also revert a bad commit using the command \texttt{git revert ref\_name}. y666g
+
 
 At some point we may want to merge one branch into another. For example, in the situation described in Figure~\ref{fig:git:branch} we may wish to merge the feature branch into the master branch after the the feature development work is finished. The command \texttt{git merge branch\_name} merges \texttt{branch\_name} into the current branch. 
 
@@ -209,7 +213,7 @@ ls  # both files appear in master after the merge
 ## feature_file master_file
 @
 
-A merge creates a new commit that has two outgoing edges into the two merged commits (see Figure~\ref{fig:git:branch-merge}). After the merge, we can keep the merged branch alive and add more commits to it (possibly to be merged again later), or we may delete the branch that was merged and continue development from the current branch (for example \texttt{master}) and consider creating a new branch in the future if needed.
+A merge creates a new commit that has two outgoing edges into the two merged commits (see Figure~\ref{fig:git:branch-merge}). After the merge, we can keep the merged branch alive and add more commits to it (possibly to be merged again later), or we may delete the branch that was merged and continue development from the current branch (for example \texttt{master}) and consider creating a new branch in the future if needed. The command \texttt{git branch -d branch\_name} deletes a branch (use \texttt{-D} to delete a branch with unmerged changes).
 
 \begin{center}
 \begin{figure}
@@ -262,22 +266,19 @@ this part is in agreement between the two branches
 ...
 \end{verbatim}
 
-There are two basic ways of helping Git in resolving merge conflict. The first is to edit the files with the markers above, remove the markers and make sure the files contain the appropriately merged version. After the conflicts are resolved manually, we need to a perform a commit to inform Git that we resolved the conflict. The second way to resolve conflicts is to use a graphic merge tool, for example by running the command \texttt{git mergetool}.
-
-
+There are two basic ways of helping Git in resolving merge conflict. The first is to edit the files with the markers above, remove the markers and make sure the files contain the appropriately merged version. After the conflicts are resolved manually by editing, we need to a perform a \texttt{git add file\_name} and \texttt{git commit} commit to inform Git that we resolved the conflict. The second way to resolve conflicts is to use a graphic merge tool by running the command \texttt{git mergetool}. This command starts a graphic merge tool such as \texttt{opendiff} or \texttt{kdiff3}. The precise tool depends on the operating system and \texttt{git mergetool} needs to be configured appropriately first (see \texttt{git help mergetool} for help on configuring the mergetool).
 
 \subsubsection{Remote Git}
 
-In many cases developers need to work with Git respositories on other servers. In this case, the first stage is to clone the respository on a local computer using the \texttt{git clone respository} command where \texttt{respository} has a pattern such as \texttt{ssh://username@address.com/path/projectName.git}. For example the following command creates a cloned repository of the \texttt{projectName.git} repository in the local \texttt{projectName} directory. The server from which the repsository was cloned is referred to as \texttt{origin}.
+In many cases developers need to work with Git respositories on other servers. In this case, the first stage is to clone the respository on a local computer using the \texttt{git clone respository} command where \texttt{respository} has a pattern such as \texttt{ssh://username@address.com/path/projectName.git}. For example the following command creates a cloned repository of the \texttt{projectName.git} repository in the local \texttt{projectName} directory. The repository that was cloned is referred to as \texttt{origin} and the cloned repository is referred to as \texttt{remote}. 
 
 <<eval=FALSE>>=
 git clone ssh://username@address.com/path/projectName.git
 @
 
-At this point the developer can move into the newly created directory and start editing files, adding files, and committing as outlined in the previous section. One major difference is that the commit will be stored in the local index rather than other remote servers. To propagate the commits to other servers we need to execute the \texttt{git push} command that is usually preceeded by the \texttt{git pull} command. 
+At this point the developer can move into the newly created directory and start editing files, adding files, and committing as outlined in the previous section. One major difference is that the commit will be stored in the local repository (\texttt{remote}) index rather than the repository that was cloned (\texttt{origin}). To propagate the commits to \texttt{origin} we need to execute the \texttt{git push} command. 
 
-The \texttt{git pull} command contacts \texttt{origin} and checks for recent updates. If a newer version is found on \texttt{origin}, that version is downloaded to the local directory and merged with the working version (if conflicts occur they need to be resolved manually). 
-The \texttt{git push} command transmits local commits to \texttt{origin}.
+The \texttt{git pull} command contacts \texttt{origin} and checks for recent updates. If there are updates on \texttt{origin}, they are downloaded to the local directory and merged with the working version (if conflicts occur they need to be resolved manually as described above). 
 
 \subsubsection{Additional Features}
 
@@ -304,16 +305,179 @@ There are various tools that visualize the Git repository history as a directed 
 An optional file \texttt{.gitignore} in the main Git directory contains filenames or filename patterns (for example \texttt{*.log}) that should be ignored by the Git respository. This prevents Git from printing a long list of untracked files when executing the \texttt{git status} command that need not be tracked or considered for addition to the respository.
 
 
-\subsection{Github}
+\subsection{GitHub}
 
+GitHub is a Git service hosted in the cloud that provides Git functionality as well as a fea additional features. Many open source software projects use GitHub to host their source code and development efforts. Some companies (for example Netflix) also use use GitHub as their source code and code development respository.
 
+It is easy to start a free account on GitHub (visit \href{http://www.github.com}{http://www.github.com}) and start a Git respository. Afterwards you can clone your GitHub repository and create a local repository. At that point you can issue the standard Git commands to commit changes locally, and the push and pull so that the local repository (remote) synchronizes with the original repository (origin). Alternatively, GitHub offers a web interface through \href{http://www.github.com}{http://www.github.com} where you can execute many GitHub commands instead of using the command line.
+
+GitHub offers two additional features beyond standard Git: fork and pull-requests. 
+
+The fork operation is similar to Git clone, but is different in that it creates a copy without assuming or requiring permission to modify the original repository. 
+
+GitHub hosts many open source projects whose code is meant to be disseminated widely, but only a small team of developers are meant to modify the code. GitHub's fork operation addresses this issue. It is similar to clone, but rather than downloading the entire repository it creates a clone on GitHub's servers that is a separate repository. The user can create a local version, make changes to it and do commits, but any pushes will modify the hosted copy and not the original repository. This facilitates open source collaboration process where a few people have permission to modify the main source code project, but everyone have access to download the latest version (or a development branch) of the software as well as create their own version (fork) and modify it.
+
+Pull-request allows people without permission to modify the original (forked) repository submit requests to people with permission to modify the original repository. After commiting a change to the forked repository, a pull-request send a request to one or more people with commit access to the original repository. These people are notified of the reuqest and they can view the commit and its diff. They can then approve the request and merge the commit into the main repository, or can leave comments outlining objections to the new version or requests for modifications. If a request for modifications are made the person who made the original commit can make modifications after which the new commit is sent again for review.
+
+Pull requests can also be used with the original repository, rather than a forked one. This encourages having developers submit their code for review by other developers who can find problems or make suggestions for improvement. Such code review process is standard in professional software development industry. 
+
+Executing a fork or a pull request can be made through the web interface at \href{http://www.github.com}{http://www.github.com} or through a command line tool \texttt{gh} using \texttt{gh fork} and \texttt{gh pull-request}. The website \href{http://www.github.com}{http://www.github.com} contains tutorials explaining how to use fork and pull-requests in detail.
 
 \subsection{Subversion} 
 
+Subversion is an older version control system that is a successor to the older version control system  Concurrent Versions System (CVS). It is still widely used today in many open source and industry projects. In contrast to Git, it is centralized, rather than distributed. The working copy that is stored on the client does not hold the entire repository information. Instead is stores the recent commit and the edits made on top of it. 
+
+To check out a working copy of a repsository type the command \texttt{svn checkout repos-address} where \texttt{repos-address} specifies the address of the repository, for example \texttt{http://server.com/svn/project1} or \\ \texttt{svn+ssh://username@server.com/svn/project1}. 
+
+To update the local version with changes that were made to the repository we use the command \texttt{svn update} (analogous to \texttt{git pull}). This performs a merge if needed, including manual resolution of merge conflicts if they exist (similar to the Git merge process). 
+
+Since the working copy in Subversion is not a repository (as in the case of Git), the commit command \texttt{svn commit -m "commit message"} updates the repository. It is analogous to \texttt{git commit} followed by \texttt{git push}. It is necessary to run \texttt{svn update} before \texttt{svn commit} if there are new updates on the remote repository. 
+
+Several other Subversion commands are similar to Git: \texttt{svn add} to add files, \texttt{svn cp} to copy files, and  \texttt{svn mv} to move files. Also, Subversion has its own diff (\texttt{svn diff}), log (\texttt{svn log}), status (\texttt{svn status}), and revert (\texttt{svn revert}) commands. These commands are similar to the Git counterparts described in Section~\ref{chap:tools:git}. 
+
+In contrast to Git's SHA-1 commit codenames, Subversion uses sequential numbers to denote versions. This is not a problem since Subversion is centralized and can thus enforce a clear numeric structure on the commits of different contributors. 
+Switching to an earlier version in Subversion can be done by a reverse merge: for example if the repository is at version 10 the command \texttt{svn merge -r 10:9} will bring back version 9 to the working copy. A subsequent \texttt{svn commit} will commit this change to the repository. 
+
+Subversion's implements branches by copying files into a new directory representing the new branch. For example, the command below copies the repository trunk (representing stable version) into a new directory that can host feature work. 
+
+<<eval=FALSE>>=
+svn copy trunk path-to-branch/branch_name
+@
+
+Making changes to the files in the new directory and committing them will keep track of the branch versions without affecting other branches. The copied directory is linked to the original directory to preserve its history and save storage space. Specifically, the branches store history up the time of copy as well as more recent changes. The branch version can be merged back into the original branch by changing directory to the original branch followed by a merge command such as the command below
+
+<<eval=FALSE>>=
+svn merge path-to-branch/branch_name
+@
+
+This updates the working copy. Executing \texttt{svn commit} will update the repository.
+
+Git has several advantages over Subversion, including: (a) not requiring network access for many operations, (b) faster commands (due to no need for network latency in some cases), (c) considerably smaller repository files, and (d) more lightweight implementation of branches. As a result Git has been gaining consderable popularity recently.
+
+
 %-----------------------------------
 \section{Build Tools}
+
+Complex software requires a complex build process: (a) compiling files that were changed since the last compilation, (b) linking different files together and possibly with external libraries, (c) running tests to diagnose potential problems with the code. Build tools enable automating this process so that less manual effort is needed and fewer mistakes are made. It is an essential part of almost all large scale software development processes.
+
+At the heart of build tools is declaring a list of tasks that need to be executed, specifying the dependency between tasks and files and between different tasks, and providing implementation details for executing the tasks. These details are expressed in one or more build files that are written in a specific format depending on the build tool that is used. The build tool reads the build file or files and executes the appropriate tasks in order. 
+
+We start below with Make, one of the earlier build tools used primarily for building C and C++ projects. We follow with a description of Ant, a more sophisticated build tool for Java, and conclude with Gradle, a state-of-the-art build tool for a variety of programming languages. 
+
 \subsection{Make}
+
+Make is an open source build tool that is part of the GNU Linux operating system. Make was very popular in the late 1990s and early 2000s and is primarily used to build C and C++ programs, though its generality makes it useful for other programming languages and also tasks that are not related to building or compilation. 
+
+The make program executes a sequence of instruction specified in a text file called \texttt{makefile} or \texttt{Makefile}. Specifically, running the command \texttt{make target\_name} in the shell prompt executes the sequence of instructions (specified in the \texttt{makefile}) needed to build the target \texttt{target\_name}.
+
+The \texttt{makefile} file is a text file containing a list of instructions for building one or more targets. Each target has the following format:
+
+<<eval=FALSE>>=
+# comment
+target: prereq_1 ... prereq_k
+  command_1
+  ...
+  command_m
+@
+
+Above, \texttt{target} is a label describing the task and \texttt{prereq\_1} to \texttt{prereq\_k} specify files that the target depends on. In other words, if the prerequisite files change since the previous make execution, the make program needs to rebuild the target. The commands \texttt{command\_1} to \texttt{command\_m} are prefixed by a tab and describe the process that builds the specified target. In general there may be zero or more prerequisite files and zero or more commands in each target. Text following \texttt{\#} are interpreted as comments.
+
+The above syntax for building a target is typically repeated multiple times in the makefile, usually with more general targets appearing at the top of the file and including more specific targets as prerequisites. Running \texttt{make} without a target argument builds the first target.
+
+Prerequisite in the makefile can be specified using wildcards (for example \texttt{*.cpp} expands to all files ending with \texttt{.cpp} in the current directory). Make can also use variables,  denoted by uppercase labels, in the specification of the commands. There are several core variables including: \texttt{\$\@} -- the filename representing the current target, and \texttt{\$<} -- the filename of the first prerequisite. Custom variables can also be defined in the makefile (for example \texttt{CC=gcc}) and referred to afterwards using the \texttt{\$} symbol (for example \texttt{\$(CC)}).
+
+Make also has pattern rules that can significantly simplify the makefile structure. A pattern rule is similar to a normal rule except that the stem of the file (filename without suffix) is represented by the \texttt{\%} character. For example, the rule below can be thought of as  multiple rules matching each .o file with a target whose prerequisite file is the corresponding .cpp file and the whose command compiles (without linking due to the \texttt{-c flag}) the .cpp file into the object file whose name is specified by the target.
+
+<<eval=FALSE>>=
+%.o: %.cpp
+	gcc -c -o $@ $< 
+@
+
+As our first example, lets consider a ``hello world'' program in C++ that includes three files. The first file represents the main executable function and is called \texttt{hello.cpp}.
+
+<<eval=FALSE>>=
+#include <hello.h>
+
+int main() {
+  helloWorld();
+  return(0);
+}
+@
+
+The second file contains the implementation of the \texttt{helloWorld} function.
+
+<<eval=FALSE>>=
+#include <iostream>
+#include <hello.h>
+
+void helloWorld(void) {
+  cout << "Hello makefiles!") << endl;
+  return;
+}
+@
+
+The third file contains the .h header file of the \texttt{helloWorld} function.
+
+<<eval=FALSE>>=
+void helloWorld(void);
+@
+
+The normal compilation command is as follows. It instructs the compiler to compile \texttt{hellomake.c} and \texttt{hellofunc.c}, name the executable file \texttt{hello}, and look at the current directory for any header files included in the specified source files. 
+
+<<eval=FALSE>>=
+gcc -o hello hellomake.cpp hellofunc.cpp -I.
+@
+
+Running this command whenever we want to build the project has the disadvantage that it recompiles all files whenever executed, even if we modify only one of the files. This is not a major problem in this simple example, but for large projects with many files and a lengthy compilation process it can be a major issue.
+
+A simple makefile that resolves the difficulty above for this case is as follows.
+
+<<eval=FALSE>>=
+CPPC=gcc  # C++ compiler
+IDIR=.  # directory storing .h header files
+CPPFLAGS=-I$(IDIR)  # flags for the C++ compiler
+DEPS = hello.h  # general dependency to add to any compilation
+OBJ = hello.o hellofunc.o  # object files
+
+# primary project target, linking .o object files
+# into the final executable
+hello: $(OBJ)
+     $(CPPC) -o hello hello.o hellofunc.o $(CPPFLAGS)
+
+# all .o files depend on corresponding .c files and header file
+# command compiles (without linking) source file into object files
+%.o: %.cpp $(DEPS)
+	$(CC) -c -o $@ $< $(CPPFLAGS)
+
+# cleanup target, removing intermediate files including
+# object files (*.o), editor auto-save files (*~), and core dump
+clean:
+	rm -f *.o *~ core
+@
+
+The first rule above represents specifies that the \texttt{hello} target depends on the two object files (compiled but not linked) and specifies the compilation command using the custom variables \texttt{CPPC} (compilation command) and \texttt{CPPFLAGS} (flags). 
+
+The second rule specifies that each .o object file depends on the curresponding .cpp file and the include file. The command compiles the .cpp file (using the variable \texttt{\$<}) into the .o file (using the variable \texttt{\$@}) (the \texttt{-o} flag specifies compilation without linking). 
+
+The third rule cleans up the directory removing intermediate files and leaving only the original source files and the final executable.
+
+When we run \texttt{make hello}, the make program checks if any of the .o pre-requisites have changed and require rebuilding. This is done by checking the second target that depends on the corresponding .cpp file and the header file. If the .cpp and the .h files did not change nothing is compiled. If only one of the .cpp files changed the second rule is applied for that file followed by the first rule. Generalizing this simple makefile to a larger more complex program can automate the build process without running unnecessary compilation stages. 
+
+There are two main principles for writing good makefiles: (a) separating compilation steps as much as possible, and using variables to separate logic from names and directory choices. We saw above how the first principle above can lead to significantly reduced compilation time for large projects. The second principle is useful in that revising the program (for example by deciding to move the header files to a different directory or by adding additional .cpp files) require a simple modification to the definitions of the custom variables rather than rewriting the build commands.  
+
 \subsection{Ant}
+
+Ant is a build tool that is similar to Make, but is implemented using the Java language and is best suited for building Java projects. Ant is an open source project hosted by the Apache Software Foundation. 
+
+One difference between Ant and Make is that Ant uses an XML file (by default build.xml) to describe the build process and its dependencies, while Make uses the Makefile format described above. 
+
+A second difference is that Ant is more portable in that the same XML build file can run appropriately on multiple operating systems, for example Linux and Windows. Make is based on shell commands that would typically be different on different operating systems.
+
+A third difference is that Ant provides a nice integration with Java unit tests. As a result, Ant conveniently integrates unit tests into the build process and is particularly convenient for test-driven development process. We postpone a description of testing and integrating testing into build tools to Section~\ref{tools:testing}.
+
+
+
+
 \subsection{Gradle}
 
 
@@ -575,7 +739,7 @@ A more sophisticated and recent alternative to pydoc is the Sphinx program that 
 
 
 %-----------------------------------
-\section{Unit Testing}
+\section{Unit Testing} \label{tools:testing}
 \subsection{Unit Testing in Java with JUnit}
 \subsection{Unit Testing in Python with Nose}
 
