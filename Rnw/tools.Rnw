@@ -356,8 +356,8 @@ Git has several advantages over Subversion, including: (a) not requiring network
 
 
 %-----------------------------------
-\section{Build Tools}
-
+\section{Build Tools} \label{sec:tools:ant}
+ 
 Complex software requires a complex build process: (a) compiling files that were changed since the last compilation, (b) linking different files together and possibly with external libraries, (c) running tests to diagnose potential problems with the code. Build tools enable automating this process so that less manual effort is needed and fewer mistakes are made. It is an essential part of almost all large scale software development processes.
 
 At the heart of build tools is declaring a list of tasks that need to be executed, specifying the dependency between tasks and files and between different tasks, and providing implementation details for executing the tasks. These details are expressed in one or more build files that are written in a specific format depending on the build tool that is used. The build tool reads the build file or files and executes the appropriate tasks in order. 
@@ -475,11 +475,125 @@ A second difference is that Ant is more portable in that the same XML build file
 
 A third difference is that Ant provides a nice integration with Java unit tests. As a result, Ant conveniently integrates unit tests into the build process and is particularly convenient for test-driven development process. We postpone a description of testing and integrating testing into build tools to Section~\ref{tools:testing}.
 
+We describe below several important aspects of the Ant XML file format, following by an example build file and some final remarks.
+
+The XML build file starts with a line describing the XML format and follows with a project element that includes inside of it one or more target elements. For example the skeleton file below has an XML format specification line followed by an outer project element containing several inner target elements. 
 
 
+<<eval=FALSE>>=
+<?xml version="1.0"?>
+<project name="hello" default="build">
+  <target name="build">
+    ...
+  </target>
+  <target name="test" description"perform unit tests">
+    ...
+  </target
+  <target name="deploy" depends="build,test">
+    ...
+  </target>
+  <target name="clean">
+    ...
+  </target
+</project>
+@
+
+XML elements in general have the following format: \texttt{<tag\_type attr\_1=val\_1 ... attr\_k=val\_k> ... <tag\_type/>} or \texttt{<tag\_type attr\_1=val\_1 ... attr\_k=val\_k/>}. The first option is used to host additional nested elements inside the outer element denoted above using the \texttt{...} notation. The second option is used for elements that do not have nested elements inside of them. In the XML example above the project element is the outer element and has the attribute \texttt{name} and \texttt{default} that get the values \texttt{"hello"} and \texttt{"build"} respectively. The project name attribute is used to refer to the project and the default attribute refers to the default target tasks. 
+
+The target element has a \texttt{name} attribute and optionally a \texttt{depends} attribute hosting the list of targets that it depends on (for example in the build file above the \texttt{deploy} target depends on \texttt{build} target and \texttt{test} target) and a \texttt{description} attribute that documents the target using a short readable comment. 
+
+When the command \texttt{ant target\_name} is executed in the shell, Ant looks for a build.xml file in the current directory and then matches \texttt{target\_name} with one of the target elements in the build file. Ant then executes the dependencies of that target followed by the instructions inside the target element. If we execute the command \texttt{ant} without a target name, Ant executes the target marked as default in the project element (for example \texttt{build} target in the example above).
+
+The instructions for executing the targets are usually given using XML elements such as \texttt{<delete>} (deletes files), \texttt{<javac>} (Java compiler), \texttt{<mkdir>} (creating a directory). These XML elements and others map to executable commands that are platform independent (for example the \texttt{<delete>} element will map to the right shell command for removing files based on the operating system). 
+
+Below is a simple Ant file for building and cleaning a simple hello world Java application that contains a single file. Note that presence of the two targets: \texttt{build} and \texttt{clean}, the first of which is the default target. The first target creates a directory for the class file and runs the Java compiler on the specfiied directory. The \texttt{javac} element a \texttt{src} element that describes the location of the source files and several additional optional attributes that are passed to the Java compiler. The \texttt{delete} element has a \texttt{fileset} element that describes the set of files to act one. The \texttt{fileset} tag has a directory attribute and an optional nested \texttt{include} element that filters the files to act on using for file name patterns (for example \texttt{**/*.java} refers to all files with a \texttt{.java} file extension that lie in the current directory or one of its subdirectories).
+
+<<eval=FALSE>>=
+<?xml version="1.0"?>
+<project name="hello" default="build">
+  <target name="build" description="build project">
+    <mkdir dir="classes"/>
+    <javac destdir="classes">
+      <src path="src"/>
+    </javac>
+  </target>
+  <target name="clean" description="clean class files">
+    <delete>
+      <fileset dir="classes">
+        <include name="*.class"/>
+      </fileset>
+    </delete>
+  </target>
+</project>
+@
+
+Putting a Hello World Java application (for example the file below) in the subdirectory \texttt{src/} and running \texttt{ant} will build the class file using the Java compiler and store it in the \texttt{classes/} subdirectory.
+
+<<eval=FALSE>>=
+public class hello { 
+   public static void main(String[] args) { 
+      System.out.println("Hello, World!");
+   }
+}
+@
+
+Ant can define variables (for example for storing directory paths) using the XML element \texttt{property}. Predefined properties include for example \texttt{basedir} (base diretory), \texttt{ant.file} (location of the build file), and \texttt{ant.java.version} (version of JDK used by Ant). Additional properties can be defined by specifying a corresponding XML element (see example below).
+
+<<eval=FALSE>>=
+<property name="ProjectURL" value="www.theanalysisofdata.com">
+@
+
+To refer to properties in the XML file we enclose the property name with the following structure \texttt{\$\{...\}}. Properties can also be specified in an external file, in which case they are listed as a list of \texttt{property\_name=property\_val} (the name of the external file needs to be specified in the build file using the following element: \texttt{property file="filename"/>}). This allows using switching between different property files without modifying the XML build file. 
 
 \subsection{Gradle}
 
+Gradle is a recent build tools that has several advantages over Ant. It is suited for a large number of languages (in addition to Java) and its build files are more readable and concise than Ant's XML file or Makefiles. Specifically, Gradle build files are specied used Groovy language - a dynamic programming language similar to Python that is dynamically compiled to run on the Java Virtual Machine. 
+ Gradle is gaining in popularity in recent years and is integrated with most popular IDEs (for example Eclipse or IntelliJ).
+
+Since Gradle is generic, it has multiple plugins or extensions corresponding to different programming languages. We describe below how to use Gradle with the Java plugin for building Java projects. Additional plugins are available for building projects in C++, Scala and several other languages.
+
+By deafult, Gradle's Java plugin assumes the following directory structure, borrowed from Maven, another popular Java build tool. 
+
+\begin{description}
+\item[\texttt{.}]: The base directory of the project containing the following subdirectory and the build file \texttt{build.gradle}.
+\item[\texttt{src/main/java}]: Contains the Java production source files.
+\item[\texttt{src/main/resources}]: Contains additional project files (for example additional JAR files)
+\item[\texttt{src/test/src}]: Contains the Java test source files
+\item[\texttt{src/test/resources}]: Contains additional test files (for example additional JAR files)
+\item[\texttt{build}]: Contains the output compilation files
+\end{description}
+
+In contrast to Ant and Make, Gradle can proceed with a nearly empty build file assuming we use the directory structure above. As a simple example consider copying the hello world Java file described in Section~\ref{sec:tools:ant} to \texttt{src/main/java} and having a nearly empty build file \texttt{build.gradle} instructing gradle to use the Java plugin as follows.
+
+<<eval=FALSE>>=
+apply plugin: 'java'
+@
+
+When we execute the command \texttt{gradle build}, Gradle will compile the source file and put the compiled class file in \texttt{build/classes/main}. The command \texttt{gradle clean} will remove compiled files in the \texttt{build} directory and \texttt{gradle test} will compile the source code and run tests specifying in the \texttt{src/test} directory. Gradle defines automatically these targets or tasks (build, clean, check), as well as other targets such as assemble, test, and jar. The implementations are already defined for these tasks as well as the dependencies (for example the build target depends on the assembly target as well as the check target that in turns depends on the test target).
+
+Gradle can adapt to non-conventional directory structures by assigning values to the appropriate variables. For example, the following build.gradle file instructs gradle to use a custom definition of the source file directory.
+
+<<eval=FALSE>>=
+apply plugin: 'java'
+sourceSets.main.java.srcDirs = ['java_src']
+@
+
+Alternatively, we can use define a custom directory structure in the following way in the build file.
+
+<<eval=FALSE>>=
+sourceSets {
+    main {
+        java {
+            srcDir 'java_src'
+        }
+        resources {
+            srcDir 'resources_src'
+        }
+    }
+}
+@
+
+Gradle can be used as in the examples above, where the definition of the directory structure, target implementations, dependencies are prespecified. In this case, writing the build file is very easy and fast and it provides significant functionality.  Gradle can also be used when customizing some or many of these conventions (directory structure, target implementations, dependencies), in which case it offers significant flexibility at the cost of a need to carefully author the build file. In any case, Gradle's build files are more readable than Makefiles or Ant's XML build files and are thus well suited for large complex projects.
 
 %-----------------------------------
 \section{Exceptions}
