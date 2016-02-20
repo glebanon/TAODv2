@@ -26,9 +26,9 @@ Missing data is a general phenomenon. A few specific examples appear below.
 \item In user surveys, users may choose to not respond to some of the questions for privacy reasons.
 \end{itemize}
 
-If a variable (dataframe column) is as likely to be missing as all other variables, we say that it is missing completely at random (MCAR). For example, in the case of users rating movies using 1-5 stars, we consider ratings of specific movies as dataframe columns and ratings associated with specific users as dataframe rows.  Since some movies are more popular than others, some columns are more likely to be missing than others, which violates the MCAR definition.
+If the probability of an observation being missing does not depend on observed or unobserved measurements we say that it is missing completely at random (MCAR). For example, in the case of users rating movies using 1-5 stars, we consider ratings of specific movies as dataframe columns and ratings associated with specific users as dataframe rows. Since some movies are more popular than others, the probability of missingness depends on the movie title as well as the movie rating, which violates the MCAR definition.
 
-A more relaxed concept is data missing at random (MAR). This occurs when the probability that a variable is missing depends only on the other information available in the dataset. Consider, for example, a survey recording gender, race, and income. Out of the three questions, gender and race are not very objectionable questions, so we assume for now that the survey respondents answer these questions fully. The income question is more sensitive and users may choose to not respond to for privacy reasons. The tendency to report income or to not report income typically varies from person to person. If it only depends on gender and race, then the data is MAR. If the decision whether to report income or not depends also on other variables that are not in the dataframe (such as age or profession), the data is not MAR.
+A more relaxed concept is data missing at random (MAR). This occurs when given the observed data, the probability that data is missing does not depend on the unobserved data. Consider, for example, a survey recording gender, race, and income. Out of the three questions, gender and race are not very objectionable questions, so we assume for now that the survey respondents answer these questions fully. The income question is more sensitive and users may choose to not respond to for privacy reasons. The tendency to report income or to not report income typically varies from person to person. If it only depends on gender and race, then the data is MAR. If the decision whether to report income or not depends also on other variables that are not in the dataframe (such as age or profession), the data is not MAR.
 
 Some data analysis techniques are specifically designed to allow for missing data. In general, however, most methods are designed to work with fully observed data. Below are some general ways to convert missing data to non-missing data.
 
@@ -169,7 +169,7 @@ Three popular techniques for dealing with outliers are listed below.
 
 \begin{description}
 \item[Truncating.] Remove all values deemed as outliers. 
-\item[Winsorization.] Replace outliers with the most extreme of the remaining values.
+\item[Winsorization.] Shrink outliers to border of main part of data. One special case of this is to replace outliers with the most extreme of the remaining values.
 \item[Robustness.] Analyze the data using a robust procedure.
 \end{description}
 
@@ -181,11 +181,11 @@ The R code below removes outliers. We sample values from a Gaussian distribution
 original_data = rnorm(20) 
 original_data[1] = 1000  
 sorted_data = sort(original_data)  
-original_data = original_data[3:18]  
-lower_limit = mean(sorted_data) - 5 * sd(sorted_data)  
-upper_limit = mean(sorted_data) + 5 * sd(sorted_data)
+filtered_data = original_data[3:18]  
+lower_limit = mean(filtered_data) - 5 * sd(filtered_data)  
+upper_limit = mean(filtered_data) + 5 * sd(filtered_data)
 not_outlier_ind = (lower_limit < original_data) & 
-                  (original_data < upper_limit)
+  (original_data < upper_limit)
 print(not_outlier_ind)  
 data_w_no_outliers = original_data[not_outlier_ind]
 @

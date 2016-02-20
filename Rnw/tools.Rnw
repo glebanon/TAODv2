@@ -582,14 +582,14 @@ Alternatively, we can use define a custom directory structure in the following w
 
 <<eval=FALSE>>=
 sourceSets {
-    main {
-        java {
-            srcDir 'java_src'
-        }
-        resources {
-            srcDir 'resources_src'
-        }
+  main {
+    java {
+      srcDir 'java_src'
     }
+    resources {
+      srcDir 'resources_src'
+    }
+  }
 }
 @
 
@@ -853,8 +853,12 @@ A more sophisticated and recent alternative to pydoc is the Sphinx program that 
 
 
 %-----------------------------------
-\section{Unit Testing} \label{tools:testing}
+\section{Software Tests} \label{tools:testing}
+
+\subsection{Overview}
+
 \subsection{Unit Testing in Java with JUnit}
+
 \subsection{Unit Testing in Python with Nose}
 
 %-----------------------------------

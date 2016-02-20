@@ -1,8 +1,6 @@
 \label{chap:c}
 
-C++ is a programming language that is especially well suited for computationally intensive programs and for interfacing with hardware or the operating system. In this chapter, we describe C++ starting from low-level features such as variable types and control flow, and concluding with object oriented programming and the standard template library. 
-
-In this chapter we consider the latest version of C++ at the time of writing (2015), C++11.
+C++ is a programming language that is especially well suited for computationally intensive programs and for interfacing with hardware or the operating system. In this chapter, we describe C++ starting from low-level features such as variable types and control flow, and concluding with object oriented programming and the standard template library. We consider the latest version of C++ at the time of writing (2015), C++11.
 
 %--------------------------------------------------------
 \section{Compilation} \label{sec:c:compilation}
@@ -13,18 +11,18 @@ In this chapter we consider the latest version of C++ at the time of writing (20
 The compilation process is composed of the following two stages.
 
 \begin{enumerate}
-\item Compile files containing C++ code into multiple object code files.
-\item Link multiple object code files into a single executable file containing assembly language instructions. 
+\item Compile files containing C++ code (source files), into object code files.
+\item Link object code files into a single executable file containing assembly language instructions. 
 \end{enumerate}
 
 Occasionally, the first stage above is referred to as compilation and the second stage is referred to as linking. In other cases, compilation refers to both stages. 
 
-In large projects containing multiple C++ files, the separation of the compilation process to two stages is particularly useful. If one of the C++ files is revised, the compilation stage (step 1) has to be repeated for 
-that file alone (the object files corresponding to the unchanged C++ files are still valid). The linking stage (step 2) needs to be repeated in order to create a new executable. Avoiding the compilation (stage 1) of the C++ files that were not revised can significantly speed up the compilation process.
+In large projects containing multiple C++ source files, the separation of the compilation process to two stages is particularly useful. If one of the source files is revised, the compilation stage (step 1) has to be repeated for 
+that source file alone (the object files corresponding to the unchanged C++ files are still valid). The linking stage (step 2) needs to be repeated in order to create a new executable. Avoiding the compilation (stage 1) of the unchanged source files can significantly speed up the compilation process.
 
-Since the executable file contains assembly language instructions, it matches a specific operating system and hardware. As a result, the compilation process must be repeated for each hardware architecture, and the executable that is the result of a compilation process on one hardware architecture may not execute on a second architecture (or in some cases may execute more slowly). 
+Since the executable file contains assembly language instructions, it matches a specific operating system and hardware and is not portable. As a result, the compilation process must be repeated for each hardware architecture, and the executable that is the result of a compilation process on one hardware architecture may not execute on a second architecture (or in some cases may execute more slowly).
 
-C++ code is composed of a sequence of case-sensitive statements separated by semi-colons and arranged in functions or classes. The function \texttt{main} is special in that the CPU executes its code whenever the operating system executes the corresponding executable file. 
+C++ code is composed of a sequence of case-sensitive statements separated by semi-colons and arranged in functions or classes. The function \texttt{main} is the entry point to the program, or in other words the CPU executes its code whenever the operating system executes the corresponding executable file. 
 
 C++ code is often annotated with comments that provide documentation on the code. Such comments are ignored by the compiler and thus they do not affect the program's functionality. There are two ways to define comments in C++:  (a) text following \texttt{//} that continues until the end of the line, and (b) text between the symbols \texttt{/*} and \texttt{*/} (possibly spanning multiple lines). 
 
@@ -47,7 +45,7 @@ Assuming that the above code is saved as a text file \texttt{foo.cpp} (the stand
 g++ foo.cpp -o foo 
 @
 
-The string following the \texttt{-o} flag above indicates the name of the executable file created by the compiler. Above and elsewhere we assume that the Linux terminal uses the bash shell of the zsh shell. Note that while C++ comments are denoted by \texttt{//} or \texttt{/* */}, bash comments are prefixed by a \texttt{\#} symbol.
+The string following the \texttt{-o} flag above indicates the name of the executable file created by the compiler. Above and elsewhere we assume that the Linux terminal uses the bash shell or the zsh shell. Note that while C++ comments are denoted by \texttt{//} or \texttt{/* */}, bash comments are prefixed by a \texttt{\#} symbol.
 
 Alternatively, we can execute the two compilation stages separately: compilation only (using the \texttt{-c} flag) followed by linking, as in the example below.
 
@@ -67,11 +65,12 @@ The \texttt{g++} compiler supports the following compilation flags. Consult the 
 
 \begin{center} \begin{tabular}{|l|l|}\hline
 flag & effect \\ \hline \hline
-\texttt{-o filename} & specify name of executable file\\ \hline
+\texttt{-o filename} & specify name of the output file\\ \hline
 \texttt{-c} & compile but not link\\ \hline
 \texttt{-g} & maintain information for a future debugging session\\ \hline
+\texttt{-llib\_name} & link with the library file \texttt{lib\_name} \\ \hline
 \texttt{-lm} & link with the standard math library \\ \hline
-\texttt{-llib\_name} & link with the library file \texttt{lib\_name} \\ \hline\texttt{-O3} & optimized compilation (level 3) \\ \hline
+\texttt{-O3} & optimized compilation (level 3) \\ \hline
 -std=c++0x & compile using the new 2011 C++ specification \\ \hline 
 \end{tabular}
 \end{center}
@@ -86,7 +85,7 @@ g++ -o foo -lm -O3 -std=c++0x foo.cpp
 
 After compilation, typing the name of the executable file in the terminal executes the corresponding program (assuming (i) the path of the executable file is in the \texttt{PATH} shell environment variable or otherwise the path needs to be explicitly provided and (ii) the user has executable permission for the executable file -- see Section~\ref{sec:os:users}). 
 
-For example, after running the executable corresponding to the C++ file \texttt{foo.cpp} above, the returned value is 0. The Linux commands below execute the executable file and read the value returned by the C++ program (that value is available as the shell variable \texttt{\$?}).
+For example, after running the executable corresponding to the C++ file \texttt{foo.cpp} above, the returned value is 0. The Linux commands below execute the executable file and read the value returned by the C++ program (that value is available as the shell variable \texttt{\$?}). As in other chapters we follow the convention that program or shell output is prefixed by a double comment symbol (the last line below), which makes it easy to copy and paste the program from electronic versions of this book to the command prompt.
 
 <<engine="bash",eval=FALSE>>=
 # compile and link to create an executable file foo
@@ -110,9 +109,9 @@ Classes are similar to types, but they hold more complex information and can be 
 
 \subsection{Types}
 
-The type \texttt{int} is commonly used to represent integers, while the type \texttt{float} is commonly used to represent real numbers using floating point representation (see Chapter 1 for a description of integers and floating point representations). The precise range of values that can be represented (and the approximation quality in the case of the floating point representation) depends on the number of bytes allocated to each type, which is hardware dependent. The typical size of \texttt{int} and \texttt{float} types is 4 bytes or 32 bits. 
+The type \texttt{int} is commonly used to represent integers, while the type \texttt{float} is commonly used to represent real numbers using floating point representation (see Chapter 1 for a description of integers and floating point representations). The precise range of values that can be represented (and the approximation precision in the case of the floating point representation) depends on the number of bytes allocated to each type, which is hardware dependent. The typical size of \texttt{int} and \texttt{float} types is 4 bytes or 32 bits. 
 
-The types \texttt{long} and \texttt{double} are similar to  \texttt{int} and \texttt{float}, respectively, but are usually allocated more bytes and thus may represent larger numbers (and with higher approximation accuracy in the case of \texttt{double} floating point representation). 
+The types \texttt{long} and \texttt{double} are similar to  \texttt{int} and \texttt{float}, respectively, but are usually allocated more bytes and thus may represent larger numbers (and with higher approximation precision in the case of \texttt{double} floating point representation). 
 
 The type \texttt{char} uses 8 bits to represent numbers between -128 and 127. It is also used to represent text characters such as ``a'' or ``M'' using the ASCII encoding (see Chapter 1). 
 
@@ -127,7 +126,7 @@ type & value & typical size (bits)\\ \hline
 \texttt{int} & integers & 32\\
 \texttt{long} & integers & 64\\
 \texttt{char} & ASCII (text) character & 8 \\
-\texttt{bool} & \texttt{true} or \texttt{false} & 1\\
+\texttt{bool} & \texttt{true} or \texttt{false} & 8\\
 \texttt{float} & real numbers & 32\\
 \texttt{double} & real numbers & 64\\
 \texttt{unsigned T} & non-negative version of type \texttt{T} & same as \texttt{T}\\
@@ -139,7 +138,7 @@ type & value & typical size (bits)\\ \hline
 
 As mentioned earlier, variables are instantiations of types. Each variable is assigned a specific type when it is defined and that type cannot be modified later on. 
 
-A C++ variable definition statement includes the variable type followed by the variable name. Several variables of the same type may be defined using comma separators. Variable names are case-sensitive and must avoid special characters and existing C++ keywords. It is common to name variables with multiple words by separating the words with an underscore, for example \texttt{training\_data}, or alternatively by capitalizing the first letter of each word, except perhaps the first word, for example \texttt{trainingData}.
+A C++ variable definition statement includes the variable type followed by the variable name. Several variables of the same type may be defined using comma separators. Variable names are case-sensitive and must avoid certain special characters and existing C++ keywords. It is common to name variables with multiple words by separating the words with an underscore, for example \texttt{training\_data}, or alternatively by capitalizing the first letter of each word, except perhaps the first word, for example \texttt{trainingData}.
 
 The code below defines three variables: a variable \texttt{age} of type \texttt{int} and two variables \texttt{height} and \texttt{weight} of type \texttt{double}. 
 
@@ -148,7 +147,7 @@ int age; // age is a variable of type int (integer)
 double height, weight; // two double variables
 @
 
-C++ code typically resides inside \texttt{main()} or some other function or object definition (though some exceptions exist as in the case of global variables). However, for simplicity we sometimes omit the embedding and display isolated code fragments.
+C++ code typically resides inside \texttt{main()} or some other function or class definition (some exceptions exist as in the case of global variables). However, for simplicity we sometimes omit below the embedding and display isolated code fragments.
 
 The variable definitions above did not assign a value to the variables. Variables may be initialized when they are defined, or later on, using the 
 assignment operator \texttt{=}. Uninitialized variables may have unexpected values and should not be used until they are assigned values. It is customary to define variables close to where they are used and assign values to them as soon as possible, and to avoid defining variables that are never assigned values.
@@ -172,7 +171,7 @@ a = 6;  // ok
 b = 6;  // error (b cannot be modified)
 @
 
-The 2011 C++ standard (C++11) includes a way of defining variables whose types are implicitly inferred by the compiler, rather than explicitly specified by the programmer. These variables are marked by a the\texttt{auto} keyword. 
+The 2011 C++ standard (C++11) includes a way of defining variables whose types are implicitly inferred by the compiler, rather than explicitly specified by the programmer. These variables are marked by the \texttt{auto} keyword. 
 
 <<engine="Rcpp",eval=FALSE>>=
 double height = 58.0, weight = 155.2;
@@ -195,7 +194,7 @@ The scope of a variable corresponds to the portion of code in which it is recogn
 a = a + 1; // error, a is out of scope
 @
 
-In some cases, a variable may be defined inside a curly braces block that has the same name as a variable defined before the curly braces block. In this case the variable defined inside the curly braces block masks the variable defined before the curly braces block, making the latter inaccessible until the inner variable goes out of scope. 
+In some cases, a variable may be defined inside a curly braces block that has the same name as a variable defined before the curly braces block. In this case the variable defined inside the curly braces block masks the variable defined before the curly braces block. 
 
 <<engine="Rcpp",eval=FALSE>>=
 int a = 2;  
@@ -213,9 +212,9 @@ int d = b; // error: b is no longer in scope
 
 \subsection{Operators}
 
-Unary operators take a single argument and return a value, while binary operators take two arguments and return a value. Unary operators appear before their argument, while binary operators appear between their two arguments. For example the unary negation operator applied to the argument 2, \texttt{-2}, returns a value that is equal to the binary subtraction operator with a 0 as its first argument and a 2 as its second argument: \texttt{0-2}.
+Unary operators take a single argument and return a value, while binary operators take two arguments and return a value. Unary operators appear before or after their argument, while binary operators appear between their two arguments. For example the unary negation operator applied to the argument 2, \texttt{-2}, returns a value that is equal to the binary subtraction operator with a 0 as its first argument and a 2 as its second argument: \texttt{0-2}.
 
-In most cases operators do not change the value of their arguments, for example \texttt{x+y} does not change the values of the variables \texttt{x} and \texttt{y} and \texttt{-x} does not change the value of \texttt{x}. In both cases a new value is returned by the original values stored in \texttt{x} and \texttt{y} are unchanged. Notable exceptions are the binary assignment operator \texttt{x=y}, which assigns the value of \texttt{y} to \texttt{x} and the unary operators \texttt{++x}, \texttt{--x}, which assign to their argument its original value incremented or decremented by one. 
+In most cases operators do not change the value of their arguments, for example \texttt{x+y} does not change the values of the variables \texttt{x} and \texttt{y} and \texttt{-x} does not change the value of \texttt{x}. In both cases a new value is returned, but the original values stored in \texttt{x} and \texttt{y} are unchanged. Notable exceptions are the binary assignment operator \texttt{x=y}, which assigns the value of \texttt{y} to \texttt{x} and the unary operators \texttt{++x}, \texttt{--x}, which assign to their argument its original value incremented or decremented by one. 
 
 The following table lists commonly used operators.  
 
@@ -236,8 +235,8 @@ operator & semantics\\ \hline \hline
 \texttt{x<=y} & arithmetic less than or equal to\\
 \texttt{x>y} & arithmetic greater than\\
 \texttt{x>=y} & arithmetic greater than or equal to\\
-\texttt{++x} & increment \texttt{x} by one\\
-\texttt{--x} & decrement \texttt{x} by one\\
+\texttt{++x} & pre-increment \texttt{x} by one\\
+\texttt{--x} & pre-decrement \texttt{x} by one\\
 \texttt{x\&\&y} & logical AND (true if x and y are true)\\
 \texttt{x||y} & logical OR (true if x or y are true)\\
 \texttt{!x} & logical NOT (true if x is false)\\ 
@@ -248,7 +247,7 @@ operator & semantics\\ \hline \hline
 
 \paragraph{}
 
-The logical operators above return a \texttt{bool} value: \texttt{true} if the corresponding condition hold and \texttt{false} if it does not hold.
+The logical operators above return a \texttt{bool} value: \texttt{true} if the corresponding condition holds and \texttt{false} if it does not hold.
 
 \paragraph{}
 
@@ -268,10 +267,10 @@ b = (a = 3); // assign 3 to a, and then assign that value to b
 
 \subsection{Type Conversions} \label{sec:c:casting}
 
-Since C++ is strongly typed, the type of a variable cannot be modified. A value of one type, however, can be converted to a related value of another type and assigned to a variable of a different type.
+Since C++ is strongly typed, the type of a variable cannot be modified. A value of one type, however, can be converted to a compatible value of another type and assigned to a variable of a different type.
 
 \begin{defn}
-Casting, or type conversion, is the process of converting a value of one type to a related value of another type.  
+Casting, or type conversion, is the process of converting a value of one type to a compatible value of another type.  
 \end{defn}
 
 When both types are numeric, type conversions produce expected results. For example, converting a \texttt{float} value that equals 0.0 to \texttt{int} produces the integer 0. Converting an \texttt{int} value 3 to a \texttt{float} produces the floating point value 3.0. 
@@ -288,7 +287,7 @@ float height = 58.3;
 height_int = (int)height; // convert 58.3 to int 
 @
 
-Implicit type conversions are triggered by the compiler on a number of occasions. In general, implicit type conversion occur when the expected type is different than the present type.
+Implicit type conversions are triggered by the compiler on a number of occasions. In general, implicit type conversion occur when the expected type is different from the present type.
 
 \begin{itemize}
 \item Non-boolean types are converted to boolean types when logical conditions are checked. Specifically, zero is converted to \texttt{false} and non-zero values are converted to \texttt{true}.  For example in the C++ statement \texttt{!3} the integer 3 is converted to a \texttt{bool} \texttt{true} value, which is then negated producing a \texttt{false} value. 
@@ -351,7 +350,7 @@ float* fy;  // fx and fy are pointers to float
 float *fx, *fy; 
 @
 
-After a pointer \texttt{x} is defined, the unary \texttt{*} operator (as in \texttt{*x}) refers to the content of the memory address pointed to by \texttt{x} (recall that it is crucial to have the pointer type agree with the type of the data at the corresponding memory). The unary \texttt{\&} operator, \texttt{\&x}, returns the memory address of the variable or object \texttt{x}. 
+After a pointer \texttt{x} is defined, the unary \texttt{*} operator (as in \texttt{*x}) refers to the content of the memory address pointed to by \texttt{x} (the pointer type should agree with the type of the data at the corresponding memory in order to interpret it correctly). The unary \texttt{\&} operator, \texttt{\&x}, returns the memory address of the variable or object \texttt{x}. 
 
 <<engine="Rcpp",eval=FALSE>>=
 int a = 2;
@@ -456,13 +455,13 @@ B[0][0][0] = 2; // first row, first column, first layer element
 B[0][1][2] = 2; // first row, second column, third layer element 
 @
 
-Multidimensional arrays in C++ are really arrays of arrays in the case of two dimensional arrays or arrays of arrays of arrays in the case of three dimensional arrays (and and so on). Thus, if \texttt{A} is a two dimensional array (for example defined using \texttt{int A[3][4]}) then \texttt{A[1]} is an array corresponding to the second row of the table \texttt{A}. 
+Multidimensional arrays in C++ are really arrays of arrays in the case of two dimensional arrays or arrays of arrays of arrays in the case of three dimensional arrays (and so on). Thus, if \texttt{A} is a two dimensional array (for example defined using \texttt{int A[3][4]}) then \texttt{A[1]} is an array corresponding to the second row of the table \texttt{A}. 
 
 \section{Preprocessor and Namespaces} \label{c:preprocessor}
 
 The preprocessor is a program that runs before the start of the compilation stage (alternatively, preprocessing is sometimes considered as part of the compilation process). It leaves most of the code intact with the exceptions of preprocessor directives, which are statements prefixed by the symbol \texttt{\#} (there is no need to include a semicolon at the end of the line). The preprocessor removes the preprocessor directives and manipulates the program accordingly. 
 
-A popular preprocessor directive is the \texttt{\#include <X>} statement, which pastes a header file \texttt{X} in place of the directive. The program can then use constants, functions, and classes that are defined in the header file. Some notable \texttt{\#include} statements are \texttt{\#include <iostream>}, which includes input and output functionality, \texttt{\#include <string>}, which includes input and output functionality, and \texttt{\#include <cmath>}, which include mathematical constants and functions. The standard notation for including header files that are contributed by the programmer is \texttt{\#include "X"}.
+A popular preprocessor directive is the \texttt{\#include <X>} statement, which pastes a header file \texttt{X} in place of the directive. The program can then use constants, functions, and classes that are defined in the header file. Some notable \texttt{\#include} statements are \texttt{\#include <iostream>}, which includes input and output functionality, \texttt{\#include <string>}, which includes string functionality, and \texttt{\#include <cmath>}, which include mathematical constants and functions. The standard notation for including header files that are contributed by the programmer is \texttt{\#include "X"}.
 
 
 <<engine="Rcpp",eval=FALSE>>= 
@@ -491,7 +490,7 @@ In either case, the .h header file needs to reside in one of the standard direct
 
 Header files typically contain only definitions, and not the implementation of the definitions. For example a header file may contain the line \texttt{int foo();} without containing the implementation of the function \texttt{foo}. The implementation code typically resides in a non-header file that is compiled beforehand and is linked to the program (see Section~\ref{sec:c:compilation}). This guarantees that the implementation code is not compiled every time the file containing the header file is compiled. 
 
-The preprocessor directive \texttt{\#define X Y} instructs the preprocessor to replace all occurrences of \texttt{X} with \texttt{Y}. This is a useful way to refer to constants by their role rather than their numeric values. Another advantage is that if the value of the constant changes, a single location in the file has to be edited (the \texttt{\#define} command). 
+The preprocessor directive \texttt{\#define X Y} instructs the preprocessor to replace all occurrences of \texttt{X} with \texttt{Y}. This is a useful way to refer to constants by their role rather than their numeric values. Another advantage is that if the value of the constant changes, a single location in the file has to be edited (the \texttt{\#define} directive). 
 
 <<engine="Rcpp",eval=FALSE>>=
 // The code below is easy to comprehend and maintain
@@ -502,15 +501,14 @@ int two_page_width = 2 * WIDTH;
 int three_page_width = 3 * 80;
 @
 
-The \texttt{\#define} directive may also be used to define more complex macros. For example the code below replaces all occurrences of \texttt{arraysize(A)} with the number of elements of \texttt{A}
-(assuming that \texttt{A} is an array). The calculation divides the size of the array in bytes by the size of each element. 
+The \texttt{\#define} directive may also be used to define more complex macros. For example the code below replaces all occurrences of \texttt{arraysize(A)} with the number of elements of \texttt{A} (assuming that \texttt{A} is an array). The calculation divides the size of the array in bytes by the size of each element. 
 
 
 <<engine="Rcpp",eval=FALSE>>=
 #include <iostream>
-#define arraysize(array)	(sof(ay)siz((ay)[)
+#define arraysize(array) (sizeof(array) / sizeof(*array))
 
-n() main()
+int main()
 {
   int A[10];
   std::cout << arraysize(A); // prints the size of the array (10)
@@ -554,7 +552,7 @@ cout << 3;
 
 \section{Strings, Input, and Output}
 
-The traditional way in C, a precursor of C++, to represent text strings was to use an array of \texttt{char} variables, with each \texttt{char} variable represents a text letter using ASCII encoding. C++ includes the more sophisticated concept of a string that includes additional functionality. Unlike an array, a string may be modified after it is created. Additionally, C++ has functionality for concatenating, comparing, and transforming strings.  
+The traditional way in C, a precursor of C++, to represent text strings was to use an array of \texttt{char} variables, with each \texttt{char} variable represents a text letter using ASCII encoding. C++ includes the more sophisticated concept of a string that includes additional functionality. Unlike an array\footnote{To be more precise the data that is held in an array may be modified but not the array size or its reference}, a string may be modified after it is created. Additionally, C++ has functionality for concatenating, comparing, and transforming strings.  
 
 Strings may be initialized using a sequence of characters surrounded by double quotes. Specific string elements are referenced using the square bracket array notation.
 
@@ -566,7 +564,7 @@ int main() {
   string s1;  // define an empty string
   string s2 = "hello world"; // define a string with content
   int sz = s2.size(); // assign size of string s2 to variable
-  char a = s2[1];  // access second character of s2 ("e") 
+  char a = s2[1];  // access second character of s2 ('e') 
   string s3 = s2 + s2; // concatenate s2 with itself
   bool b = s2.empty();  // true if s2 is an empty string
   return 0;
@@ -588,7 +586,7 @@ int main() {
 }
 @
 
-In C++, \texttt{cin} reads contents from the standard input, typically character strokes entered by the keyboard when the program is executing. Specifically \texttt{cin << x} takes that input, separates it by white spaces and assigns the first constituent into the variable \texttt{x}. Multiple variables may be included in a single \texttt{cin} command by separating them with the \texttt{<<} symbol. 
+In C++, \texttt{cin} reads contents from the standard input, typically character strokes entered by the keyboard when the program is executing. Specifically \texttt{cin >> x} takes that input, separates it by white spaces and assigns the first constituent into the variable \texttt{x}. Multiple variables may be included in a single \texttt{cin} command by separating them with the \texttt{>>} symbol. 
 
 <<engine="Rcpp",eval=FALSE>>=
 #include <iostream>
@@ -597,7 +595,7 @@ using namespace std;
 
 int main() {
   string s1, s2;
-  // read a string separated by white space from standard
+  // read a string delimited by white space from standard
   // input into s1
   cin >> s1; 
   // read two strings separated by white spaces (first into s1 and 
@@ -639,7 +637,7 @@ int main() {
 }
 @
 
-In C++ \texttt{cout} prints strings or numeric variables to standard output, which typically the terminal in which the program is executing. Specifically, \texttt{cout << x} prints the value of the variable or string \texttt{x}. Multiple arguments may be used by separating them with \texttt{<<}. The expression \texttt{endl} corresponds to the end of line character.
+In C++ \texttt{cout} prints strings or numeric variables to standard output, which typically shows in the terminal where program is executing. Specifically, \texttt{cout << x} prints the value of the variable or string \texttt{x}. Multiple arguments may be used by separating them with \texttt{<<}. The expression \texttt{endl} corresponds to the end of line character.
 
 <<engine="Rcpp",eval=FALSE>>=
 #include <iostream>
@@ -656,7 +654,7 @@ int main() {
 }
 @
 
-Compiling and executing the program above results in the following output (the \texttt{\#\#} symbol below denotes that this is the output of the program).
+Compiling and executing the program above results in the following output.
 
 <<engine="Rcpp",eval=FALSE>>=
 ## hello world
@@ -670,27 +668,28 @@ When a program is launched, the statements in the \texttt{main} function are exe
 
 \subsection{If-Else Clauses}
 
-An if-else clause evaluates a condition and based on its value determines which of two clauses will be executed. If the condition holds the first sequence of statements surrounded by curly braces will be executed. If the condition does not hold, the second sequence of statements surrounded by curly braces and coming after the \texttt{else} keyword will be executed. If the sequence of statements contains a single statement the curly braces may be omitted. 
+An if-else clause evaluates a condition and based on its value determines which of two clauses will be executed. If the condition holds the first sequence of statements surrounded by curly braces (if-block) will be executed. If the condition does not hold, the second sequence of statements surrounded by curly braces and coming after the \texttt{else} keyword will be executed (else-block). If the sequence of statements contains a single statement the curly braces may be omitted. 
 
 <<engine="Rcpp",eval=FALSE>>=
-int a;
+int a, abs_a;
 cin >> a; // read a from terminal
-// replace a by its absolute value
+// replace a by its absolute value and store it in abs_a
 if (a < 0) {
-  a = -a;  // if a is negative, make it positive
+  abs_a = -a;  // if a is negative, make it positive
 } else {
-  a = a;  // if a is non-negative, leave it as is
+  abs_a = a;  // if a is non-negative, leave it as is
 }
 @
 
-As the example above shows, it is customary to indent the code inside the curly braces with compared to the code outside of the curly braces. Omitting the else clause is equivalent to specifying an empty else clause. For example, the following example achieves the same computation as the one above.
+As the example above shows, it is customary to indent the code inside the curly braces compared to the code outside of the curly braces. Omitting the else clause is equivalent to specifying an empty else clause. For example, the following example achieves the same computation as the one above.
 
 <<engine="Rcpp",eval=FALSE>>=
-int a;
+int a, abs_a;
 cin >> a;
+abs_a = a;
 // replace a by its absolute value
-if (a < 0) 
-  a = -a; // curly braces omitted (single statement)
+if (abs_a < 0) 
+  abs_a = -abs_a; // curly braces omitted (single statement)
 @
 
 
@@ -912,7 +911,7 @@ int main() {
 
 \subsection{Function Parameters}
 
-The statements inside a function may depend on parameters that are passed to the function by the calling environment. In the function definition, the list of parameters appears inside the parenthesis, separated by commas. When the function is called, specific values corresponding to these parameters have to be specified.
+The statements inside a function may depend on parameters that are passed to the function by the calling environment. In the function definition, the list of parameters appears inside the parenthesis, separated by commas. When the function is called, the specified values are copied to the parameters and can be later referred to inside the function. 
 
 For example, the code below has a function that computes the sum of two values that are passed to it as arguments by the calling environment. 
 
@@ -1205,7 +1204,7 @@ Below is an example of calling the appropriate program (we assume that the code 
 
 \subsection{Overloading Functions}
 
-C++ allows multiple functions with the same name but with different declarations. When the function is called, the compiler attempts to determine which function is called based on the list of arguments in the function call. 
+C++ allows multiple functions with the same name but with different call signatures. When the function is called, the compiler attempts to determine which function is called based on the list of arguments in the function call. 
 
 For example, the code below contains three  \texttt{print\_arguments} function with different parameter lists. The \texttt{main} function contains three calls to \texttt{print\_arguments}, each being matched to a different function definition. 
 

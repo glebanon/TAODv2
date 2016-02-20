@@ -245,15 +245,16 @@ To remove outliers we need to first detect them.
 
 \begin{frame}[fragile]
 <<engine="R",eval=FALSE>>=
-originalData = rnorm(20) 
-originalData[1] = 1000  
-sortedData = sort(originalData)
-originalData = originalData[3:18]  
-lowerLimit = mean(sortedData) - 5 * sd(sortedData)  
-upperLimit = mean(sortedData) + 5 * sd(sortedData)
-noOutlierInd = (lowerLimit < originalData) &
-               (originalData < upperLimit)
-dataWithoutOutliers = originalData[noOutlierInd]
+original_data = rnorm(20) 
+original_data[1] = 1000  
+sorted_data = sort(original_data)  
+filtered_data = original_data[3:18]  
+lower_limit = mean(filtered_data) - 5 * sd(filtered_data)  
+upper_limit = mean(filtered_data) + 5 * sd(filtered_data)
+not_outlier_ind = (lower_limit < original_data) & 
+  (original_data < upper_limit)
+print(not_outlier_ind)  
+data_w_no_outliers = original_data[not_outlier_ind]
 @
 \end{frame}
 
