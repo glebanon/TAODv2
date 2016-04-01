@@ -480,7 +480,7 @@ qplot(disp,
       data = mtcars, 
       main = "MPG vs Eng. Displacement") + 
   stat_smooth(method = "loess", 
-              degree = 0, 
+              method.args = list(degree = 0), 
               span = 0.2, 
               se = FALSE)
 @
@@ -493,7 +493,7 @@ qplot(disp,
       data = mtcars, 
       main = "MPG vs Eng. Displacement") + 
   stat_smooth(method = "loess", 
-              degree = 0, 
+              method.args = list(degree = 0), 
               span = 1, 
               se = FALSE)
 @
@@ -506,7 +506,7 @@ qplot(disp,
       data = mtcars, 
       main = "MPG vs Eng. Displacement") + 
   stat_smooth(method = "loess", 
-              degree = 0, 
+              method.args = list(degree = 0), 
               span = 10, 
               se = FALSE)
 @
@@ -517,9 +517,9 @@ Omitting this parameter reverts to an automatically chosen value.
 qplot(disp, 
       mpg, 
       data = mtcars, 
-      main = "MPG vs Eng. Displacement") +
+      main = "MPG vs Eng. Displacement") + 
   stat_smooth(method = "loess", 
-              degree = 0, 
+              method.args = list(degree = 0), 
               se = FALSE)
 @
 

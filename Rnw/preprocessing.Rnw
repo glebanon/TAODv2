@@ -46,10 +46,10 @@ R represents missing data using the \texttt{NA} symbol which stands for not avai
 
 Many data analysis functions fail on data containing missing values and simply return \texttt{NA} value. This is intended as a warning to the programmer that the data contains missing values. Some functions have an \texttt{na.rm} argument, which if set to \texttt{TRUE} changes the function behavior so that it proceeds to operate on the supplied data after removing all dataframe rows with missing values.
 
-The code below analyzes the dataframe \texttt{movies} in the \texttt{ggplot2} package, which contains 24 attributes (genre, year, budget, user ratings, etc.) for 58788 movies obtained from the website \href{http://www.imdb.com}{http://www.imdb.com} with some missing values. Type \texttt{help(movies)} after loading the package \texttt{ggplot2} for more information. 
+The code below analyzes the dataframe \texttt{movies} in the \texttt{ggplot2movies} package, which contains 24 attributes (genre, year, budget, user ratings, etc.) for 58788 movies obtained from the website \href{http://www.imdb.com}{http://www.imdb.com} with some missing values. Type \texttt{help(movies)} after loading the package \texttt{ggplot2movies} for more information. 
 
 <<engine="R",eval=TRUE>>=
-library(ggplot2)
+library(ggplot2movies)
 names(movies)
 # display 20 rows, 6 first columns
 movies[9000:9020, 1:6]  
